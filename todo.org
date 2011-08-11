@@ -1,4 +1,6 @@
 * TODO Write the command line prompt
+** TODO Make it easier to call command from repl: call "help like this"
+Split out the string in the call function, rather than in the prompt! function
 ** TODO check arity when calling commands
 ** TODO make help work correctly (print the doc string)
 ** TODO Define a test case for the line parser
