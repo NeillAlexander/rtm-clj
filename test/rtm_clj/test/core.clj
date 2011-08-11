@@ -4,3 +4,5 @@
 
 (deftest lookup-help
   (is (= help (lookup-command "help"))))
+
+

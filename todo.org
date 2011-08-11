@@ -1,11 +1,13 @@
 * TODO Write the command line prompt
+** TODO check arity when calling commands
 ** TODO make help work correctly (print the doc string)
-** TODO ignore empty command (regexp)
 ** TODO Define a test case for the line parser
-** TODO Add some basic commands
-* TODO Write macro for registering a command
+** TODO ignore empty command (regexp)
 * TODO Log in and set up api
 ** TODO prompt for api key on startup
 *** TODO store the api key in home directory
 ** TODO Prompt for username and password
 ** TODO Authenticate against the rtm api
+* TODO Provide a command to change the prompt
+* TODO Write macro for registering a command
+

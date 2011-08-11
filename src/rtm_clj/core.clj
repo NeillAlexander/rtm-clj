@@ -12,7 +12,9 @@
 
 ;;------------------------------------------------------------
 
-(defn exit []
+(defn exit
+  "Exits the application"
+  []
   (println "Good-bye")
   (System/exit 1))
 
@@ -31,20 +33,27 @@
   [cmd & args]
   (@*commands* cmd))
 
-(defn prompt! []
+(defn prompt!
+  "Displays the prompt for the user and reads input for stdin"
+  []
   (print "rtm> ")
   (flush)
-  (str (read-line)))
+  (string/split (read-line) #" "))
 
-(defn call [cmd args]
-  (apply cmd []))
+(defn call
+  "Destructures the command entered by the user, looking up the function that
+implements the command using the first element. If found, the function is called
+with the rest of the args"
+  [cmd & args]
+  (if-let [f (lookup-command cmd)]
+    (apply f [])
+    (println (str cmd ": command not found"))))
 
-(defn cmd-loop []
-  (let [[cmd & args] (string/split (prompt!) #" ")]
-    (if-let [f (lookup-command cmd)]
-      (call f args)
-      (println (str cmd ": command not found")))
-    (recur)))
+(defn cmd-loop
+  "This is repl, if you like, for rtm. Read a command, evaluate it, print the result, loop"
+  []
+  (apply call (prompt!))
+  (recur))
 
 (defn -main [& args]
   (cmd-loop))
