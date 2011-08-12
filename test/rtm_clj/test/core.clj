@@ -5,14 +5,19 @@
 (deftest lookup-help
   (is (= help (lookup-command "help"))))
 
-(defn dummy-command
-  "For testing"
-  []
-  1)
+(deftest test-arity-check-fn
+  (is (= true ((arity-check []) 0)))
+  (is (= true ((arity-check [:x]) 1)))
+  (is (= true ((arity-check ['& :args]) 0)))
+  (is (= true ((arity-check ['& :args]) 1)))
+  (is (= true ((arity-check [:x '& :args]) 1)))
+  (is (= true ((arity-check [:x '& :args]) 2)))
+  (is (= false ((arity-check []) 1)))
+  (is (= false ((arity-check [:x]) 2))))
 
-(register-command dummy-command "dummy")
-
-;; once this passes it will be easier to test from repl
-(deftest call-handles-unsplit-string
-  (is (= 1 (call "dummy command call")))
-  (is (= 1 (call "dummy"))))
+(deftest var-args-arity
+  "Tests that arity checks handles & args"
+  (is (= true (arity-matches-args echo ["hello"])))
+  (is (= true (arity-matches-args echo ["hello there"])))
+  (is (= true (arity-matches-args echo ["hello there everyone"])))
+  (is (= true (arity-matches-args echo ["hello there everyone in the world"]))))
