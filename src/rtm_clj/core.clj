@@ -1,11 +1,11 @@
 (ns rtm-clj.core
-  (:require [clojure.string :as string])
+  (:require [clojure.string :as str])
   (:gen-class :main true))
 
 
 (def *commands* (atom {}))
 
-(defn- register-command
+(defn register-command
   "Registers the command for future use"
   [f name]
   (swap! *commands* assoc name f))
@@ -34,15 +34,16 @@
   (@*commands* cmd))
 
 (defn prompt!
-  "Displays the prompt for the user and reads input for stdin"
+  "Displays the prompt for the user and reads input for stdin. Returns a vector
+of the individual words that were entered."
   ([]
      (prompt! "rtm> "))
   ([s]
      (print s)
      (flush)
-     (string/split (read-line) #" ")))
+     (read-line)))
 
-(defn call
+(defn- call-cmd
   "Destructures the command entered by the user, looking up the function that
 implements the command using the first element. If found, the function is called
 with the rest of the args"
@@ -51,10 +52,16 @@ with the rest of the args"
     (apply f [])
     (println (str cmd ": command not found"))))
 
+(defn call
+  "Pass the raw command string in here as read from the prompt. Parses it and
+delegate to the call-cmd"
+  [cmd-str]
+  (apply call-cmd (str/split cmd-str #" ")))
+
 (defn cmd-loop
   "This is repl, if you like, for rtm. Read a command, evaluate it, print the result, loop"
   []
-  (apply call (prompt!))
+  (call (prompt!))
   (recur))
 
 (defn -main [& args]
