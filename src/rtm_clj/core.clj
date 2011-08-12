@@ -59,20 +59,17 @@ of the individual words that were entered."
      (read-line)))
 
 
-(defn arity
-  "Returns the various arities of the function"
-  [f]
-  (map count (:arglists (meta f))))
-
-
-;; higher order functions rock
+;; higher order functions rock!
 (defn arity-check
   "Returns a function that evaluates to true if the arity matches the count"
   [arglist]
+  ;; special case - if arglist is of zero length then no need to check for & args
   (if (= 0 (count arglist))
     #(= % 0)
     (let [arg-map (apply assoc {}
                          (interleave arglist (range 0 (count arglist))))]
+      ;; if & args found then number of args is >= the position of the &
+      ;; otherwise it's just a simple size comparison
       (if ('& arg-map)
         #(>= % ('& arg-map))
         #(= % (count arglist))))))
