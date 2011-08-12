@@ -35,10 +35,12 @@
 
 (defn prompt!
   "Displays the prompt for the user and reads input for stdin"
-  []
-  (print "rtm> ")
-  (flush)
-  (string/split (read-line) #" "))
+  ([]
+     (prompt! "rtm> "))
+  ([s]
+     (print s)
+     (flush)
+     (string/split (read-line) #" ")))
 
 (defn call
   "Destructures the command entered by the user, looking up the function that

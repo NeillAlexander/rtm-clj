@@ -1,4 +1,5 @@
 * TODO Write the command line prompt
+** DONE make prompt configurable
 ** TODO Make it easier to call command from repl: call "help like this"
 Split out the string in the call function, rather than in the prompt! function
 ** TODO check arity when calling commands
