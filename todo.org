@@ -13,4 +13,5 @@ Split out the string in the call function, rather than in the prompt! function
 ** TODO Authenticate against the rtm api
 * TODO Provide a command to change the prompt
 * TODO Write macro for registering a command
-
+* TODO Provide a way to set up aliases
+** TODO For example, once have a way to search can save that as an alias

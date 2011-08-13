@@ -23,16 +23,20 @@
   (System/exit 1))
 
 
+(declare lookup-command)
+
 (defn help
-  "Displays all the available commands"
+  "Displays all the available commands, or provides help for a particular command"
   ([]
-     (println (keys @*commands*)))
+     (apply println (sort (keys @*commands*))))
   ([cmd]
-     (println (str "Help for " cmd))))
+     (if-let [f (lookup-command cmd)]
+       (println (str cmd ": " (:doc (meta f))))
+       (println (str cmd ": command not found")))))
 
 
 (defn echo
-  "Echos out the command"
+  "Echos out the command: echo [text]"
   [& args]
   (apply println args))
 
