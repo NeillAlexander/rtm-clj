@@ -4,7 +4,8 @@
            [java.io ByteArrayInputStream]))
 
 ;; constant
-(def *base-url* "http://api.rememberthemilk.com/services/rest/?")
+(def *api-url* "http://api.rememberthemilk.com/services/rest/?")
+(def *auth-url-base* "http://www.rememberthemilk.com/services/auth/?")
 
 ;; state
 (def *api-key* (atom ""))
@@ -49,15 +50,18 @@
 
 (defn build-rtm-url
   "Builds the url to hit the rest service"
-  [method param-map]
-  (let [all-params (assoc param-map "method" method "api_key" @*api-key*)
-        api-sig (sign-params all-params)]
-    (str *base-url* (build-params all-params) "&api_sig=" api-sig)))
+  ([param-map]
+     (build-rtm-url param-map *api-url*))
+  ([param-map base-url]
+     (let [all-params (assoc param-map "api_key" @*api-key*)
+           api-sig (sign-params all-params)]
+       (str base-url (build-params all-params) "&api_sig=" api-sig))))
 
 (defn- call-api
   [method param-map]
   (if (and (shared-secret-set?) (api-key-set?))
-    (let [url (str (build-rtm-url method param-map))]
+    (let [param-map-with-method (assoc param-map "method" method)
+          url (str (build-rtm-url param-map-with-method))]
       (http/get url))
     (println "Shared secret and / or api key not set")))
 
@@ -84,3 +88,9 @@
   (if-let [response (:body (call-api "rtm.auth.getFrob" {}))]
     (first (:content (first (:content (to-xml response)))))))
 
+;; need to generate the url to redirect the user to authenticate
+(defn authenticate-user
+  "See http://www.rememberthemilk.com/services/api/authentication.rtm"
+  []
+  (if-let [frob (rtm-auth-getFrob)]
+    (build-rtm-url {"perms" "delete", "frob" frob} *auth-url-base*)))

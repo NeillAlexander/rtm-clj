@@ -8,7 +8,10 @@ Split out the string in the call function, rather than in the prompt! function
 ** DONE ignore empty command (regexp)
 * TODO Log in and set up api
 ** TODO Write the api to login
-Test it manually from the repl
+Working up to the point of getting the frob. Next bit is to construct
+the authentication url correctly. At the minute the build url assumes
+a method. Need to not do that. Maybe pass in the method as a param map?
+** TODO Throw an exception if api key etc not set? Catch at repl?
 ** TODO Write the api to pull back initial data
 Test it manually
 ** TODO prompt for api key on startup
