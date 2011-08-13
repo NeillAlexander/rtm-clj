@@ -1,5 +1,6 @@
 (ns rtm-clj.core
   (:require [clojure.string :as str])
+  (:require [rtm-clj.api :as api])
   (:gen-class :main true))
 
 
@@ -123,4 +124,8 @@ delegate to the call-cmd"
 
 
 (defn -main [& args]
-  (cmd-loop))
+  (let [api-key (prompt! "Enter api key: ")
+        secret (prompt! "Enter shared secret: ")]
+    (api/set-api-key! api-key)
+    (api/set-shared-secret! secret)
+    (cmd-loop)))
