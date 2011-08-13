@@ -3,8 +3,8 @@
 ** DONE Make it easier to call command from repl: call "help like this"
 Split out the string in the call function, rather than in the prompt! function
 ** DONE check arity when calling commands
-** TODO make help work correctly (print the doc string)
-** TODO Define a test case for the line parser
+** DONE make help work correctly (print the doc string)
+** DONE Define a test case for the line parser
 ** TODO ignore empty command (regexp)
 * TODO Log in and set up api
 ** TODO prompt for api key on startup

@@ -60,7 +60,10 @@ of the individual words that were entered."
   ([s]
      (print s)
      (flush)
-     (read-line)))
+     (let [line (read-line)]
+       (if (str/blank? line)
+         (recur s)
+         line))))
 
 
 ;; higher order functions rock!
