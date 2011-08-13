@@ -1,5 +1,6 @@
 (ns rtm-clj.api
-  (:require [clj-http.client :as http]))
+  (:require [clj-http.client :as http])
+  (:import [java.security MessageDigest]))
 
 ;; constant
 (def *base-url* "http://api.rememberthemilk.com/services/rest/?")
@@ -18,6 +19,25 @@
   [secret]
   (reset! *shared-secret* secret))
 
+(defn- build-params
+  "Builds key=value&key=value&key=value to append onto url"
+  ([param-map]
+     (build-params param-map "=" "&"))
+  ([param-map key-val-separator param-separator]
+     (apply str (drop-last (interleave (map #(str (first %) key-val-separator (second %)) param-map) (repeat param-separator))))))
+
+(defn- md5sum
+  [s]
+  (.toString (BigInteger. 1 (.digest (MessageDigest/getInstance "MD5") (.getBytes s))) 16))
+
+;; see http://www.rememberthemilk.com/services/api/authentication.rtm
+(defn- sign-params
+  "This does the signing that RTM api requires"
+  [param-map]
+  (if-not (empty? @*shared-secret*)
+    (let [sorted-map (sort param-map)]
+      (md5sum (str @*shared-secret* (build-params sorted-map "" ""))))))
+
 (defn build-rtm-url
   "Builds the url to hit the rest service"
   [method]
@@ -25,11 +45,6 @@
 
 (defn- call-api
   [method param-map])
-
-(defn- build-params
-  "Builds key=value&key=value&key=value to append onto url"
-  [param-map]
-  (apply str (drop-last (interleave (map #(str (first %) "=" (second %)) m) (repeat "&")))))
 
 ;; see http://www.rememberthemilk.com/services/api/request.rest.rtm
 (defn echo
