@@ -8,9 +8,9 @@ Split out the string in the call function, rather than in the prompt! function
 ** DONE ignore empty command (regexp)
 * TODO Log in and set up api
 ** TODO Write the api to login
-Working up to the point of getting the frob. Next bit is to construct
-the authentication url correctly. At the minute the build url assumes
-a method. Need to not do that. Maybe pass in the method as a param map?
+Done up to the point of constructing the url for the authentication
+page. Next I need to auto launch a browser session for that page,
+then can move on to check if logged in, and pull back data
 ** TODO Throw an exception if api key etc not set? Catch at repl?
 ** TODO Write the api to pull back initial data
 Test it manually
@@ -23,3 +23,5 @@ Test it manually
 * TODO Write macro for registering a command
 * TODO Provide a way to set up aliases
 ** TODO For example, once have a way to search can save that as an alias
+* TODO Make the api reusable for other people
+** TODO Don't have it just print error. Throw exceptions etc.
