@@ -2530,9 +2530,13 @@ $(document).ready(function() {
 </div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.2.1</td></tr><tr><td class="dep-name">clj-http</td><td class="dotted"><hr /></td><td class="dep-version">0.1.3</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.6.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#rtm-clj.api">rtm-clj.api</a></li><li><a href="#rtm-clj.core">rtm-clj.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.api" name="rtm-clj.api"><h1 class="project-name">rtm-clj.api</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This contains the functions that actually call the Remember the Milk API.
 The API is REST based, so it uses clj-http.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.api
-  (:require [clj-http.client :as http])
+  (:require [clj-http.client :as http]
+            [clojure.zip :as zip]
+            [clojure.xml :as xml])
+  (:use [clojure.contrib.zip-filter.xml])
   (:import [java.security MessageDigest]
-           [java.io ByteArrayInputStream]))</pre></tr><tr><td class="docs"><h1>Constants</h1>
+           [java.io ByteArrayInputStream]
+           [java.net URI]))</pre></tr><tr><td class="docs"><h1>Constants</h1>
 </td><td class="codes" /><pre class="brush: clojure">(def *api-url* &quot;http://api.rememberthemilk.com/services/rest/?&quot;)
 (def *auth-url-base* &quot;http://www.rememberthemilk.com/services/auth/?&quot;)</pre></tr><tr><td class="docs"><p>At some point I may make this configurable. This is where the
 state is stored.</p>
@@ -2620,7 +2624,13 @@ xml structure so that we can parse it.</p>
   &quot;Convert the string to xml&quot;
   [s]
   (let [input-stream (ByteArrayInputStream. (.getBytes s))]
-    (clojure.xml/parse input-stream)))</pre></tr><tr><td class="docs"><h1>The Actual RTM Methods</h1>
+    (zip/xml-zip (xml/parse input-stream))))</pre></tr><tr><td class="docs"><p>Parse the xml extracting the relevant information
+This uses clojure.contrib.zip-filter/xml->
+Pass in preds which will be applied against xml->
+returning the value</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn extract-xml-data
+  [xml-data &amp; preds]
+  (apply xml-&gt; xml-data preds))</pre></tr><tr><td class="docs"><h1>The Actual RTM Methods</h1>
 
 <p>These are the top-level api functions, corresponding (mostly) to
 the methods defined
@@ -2636,15 +2646,22 @@ user.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-auth-getFrob
   &quot;Calls the rtm.auth.getFrob method&quot;
   []
-  ;; make sure the shared secret and api key are set
   (if-let [response (:body (call-api &quot;rtm.auth.getFrob&quot; {}))]
-    (first (:content (first (:content (to-xml response)))))))</pre></tr><tr><td class="docs"><p>Generates the url that the user needs to access in order to grant
-access for the client to access their account.</p>
-</td><td class="codes" /><pre class="brush: clojure">(defn authenticate-user
+    (first (extract-xml-data (to-xml response) :frob text))))</pre></tr><tr><td class="docs"><p>Generates the url that the user needs to access in order to grant
+access for the client to access their account, and launches the
+browser</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn request-authorization
   &quot;See http://www.rememberthemilk.com/services/api/authentication.rtm&quot;
   []
   (if-let [frob (rtm-auth-getFrob)]
-    (build-rtm-url {&quot;perms&quot; &quot;delete&quot;, &quot;frob&quot; frob} *auth-url-base*)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
+    (if-let [url (build-rtm-url {&quot;perms&quot; &quot;delete&quot;, &quot;frob&quot; frob} *auth-url-base*)]
+      (do
+        (println (str &quot;Opening browser at &quot; url))
+        (.browse (java.awt.Desktop/getDesktop) (URI. url))
+        frob))))</pre></tr><tr><td class="docs"><p>Puts in the call to the api for an auth token, which will be available
+if the user has authorized access</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-auth-getToken
+  [frob])</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
 command line application. The idea is that it displays a prompt, you enter
 a command, which is then executed. It's essentially a kind of REPL or shell.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.core
