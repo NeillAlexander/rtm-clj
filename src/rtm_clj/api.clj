@@ -128,6 +128,9 @@
     (zip/xml-zip (xml/parse input-stream))))
 
 ;; Parse the xml extracting the relevant information
+;; This uses clojure.contrib.zip-filter/xml->
+;; Pass in preds which will be applied against xml->
+;; returning the value
 (defn extract-xml-data
   [xml-data & preds]
   (apply xml-> xml-data preds))
