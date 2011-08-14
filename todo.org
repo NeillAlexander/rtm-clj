@@ -8,8 +8,13 @@ Split out the string in the call function, rather than in the prompt! function
 ** DONE ignore empty command (regexp)
 * TODO Set up Marginalia to work with project
 ** TODO Find a way to automatically push to gh-pages
-Maybe a Leiningen plugin?
-** TODO Blog about it
+lein marg
+Copy somewhere safe
+Switch to gh-pages branch
+Copy the html file back to index.html
+Add and commit
+Push
+Switch back to master
 * TODO Log in and set up api
 ** TODO Tidy up the xml parsing - use zipper?
 ** TODO Handle api responses correctly - return error codes
