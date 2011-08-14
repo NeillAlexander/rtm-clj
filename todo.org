@@ -8,6 +8,9 @@ Split out the string in the call function, rather than in the prompt! function
 ** DONE ignore empty command (regexp)
 * TODO Log in and set up api
 ** TODO Set up Marginalia to work with project
+*** TODO Find a way to automatically push to gh-pages
+Maybe a Leiningen plugin?
+*** TODO Blog about it
 ** TODO Tidy up the xml parsing - use zipper?
 ** TODO Handle api responses correctly - return error codes
 ** TODO Write the api to login

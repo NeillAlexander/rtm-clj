@@ -1,17 +1,25 @@
+;; This contains the functions that actually call the Remember the Milk API.
+;; The API is REST based, so it uses clj-http.
 (ns rtm-clj.api
   (:require [clj-http.client :as http])
   (:import [java.security MessageDigest]
            [java.io ByteArrayInputStream]))
 
-;; constant
+;; # Constants
 (def *api-url* "http://api.rememberthemilk.com/services/rest/?")
 (def *auth-url-base* "http://www.rememberthemilk.com/services/auth/?")
+
+;; At some point I may make this configurable. This is where the
+;; state is stored.
 (def *state-file* (str (System/getenv "HOME") "/.rtm-clj"))
 
-;; state
+;; # State
+
+;; These are the 2 things needed to authenticate with RTM.
 (def *api-key* (atom ""))
 (def *shared-secret* (atom ""))
 
+;; Helper functions to store the state away in the atoms.
 (defn set-api-key!
   "Sets the key for the session"
   [key]
@@ -22,10 +30,13 @@
   [secret]
   (reset! *shared-secret* secret))
 
+;; And a helper function to get the current state.
 (defn get-state
   []
   {:api-key @*api-key* :shared-secret @*shared-secret*})
 
+;; ## Persistence
+;; Store the state to a file, using the default location.
 (defn save-state
   "Save the api key and shared secret to a file"
   ([]
@@ -33,6 +44,9 @@
   ([f]
      (spit f (get-state))))
 
+;; Load the state up again. This is called on startup. Note
+;; the exclamation mark, due to the fact that it overrides
+; the current state.
 (defn load-state!
   "Tries to set up the api key and shared secret from a file"
   ([]
@@ -47,12 +61,14 @@
        (catch Exception e
          nil))))
 
-;; url stuff
+;; # URL Building
 
+;; Accepts a map, and converts it into key value pairs for the url
 (defn- build-params
   "Builds key=value&key=value&key=value to append onto url"
   ([param-map]
      (build-params param-map "=" "&"))
+  ;; this is used when signing parameters, when the = and & is stripped out.
   ([param-map key-val-separator param-separator]
      (apply str (drop-last (interleave (map #(str (first %) key-val-separator (second %)) param-map) (repeat param-separator))))))
 
@@ -60,6 +76,7 @@
   [s]
   (.toString (BigInteger. 1 (.digest (MessageDigest/getInstance "MD5") (.getBytes s))) 16))
 
+;; Building up the vocabulary...
 (defn- shared-secret-set?
   []
   (not (empty? @*shared-secret*)))
@@ -68,7 +85,8 @@
   []
   (not (empty? @*api-key*)))
 
-;; see http://www.rememberthemilk.com/services/api/authentication.rtm
+;; See [RTM Authentication](http://www.rememberthemilk.com/services/api/authentication.rtm)
+;; documentation.
 (defn- sign-params
   "This does the signing that RTM api requires"
   [param-map]
@@ -76,6 +94,7 @@
     (let [sorted-map (sort param-map)]
       (md5sum (str @*shared-secret* (build-params sorted-map "" ""))))))
 
+;; Builds the url, with the api and signature parameters correctly applied.
 (defn build-rtm-url
   "Builds the url to hit the rest service"
   ([param-map]
@@ -85,6 +104,9 @@
            api-sig (sign-params all-params)]
        (str base-url (build-params all-params) "&api_sig=" api-sig))))
 
+;; Abstracts out the the REST call.
+;; method is the name of the RTM method.
+;; The param-map contains the key/value pairs for the http request params.
 (defn- call-api
   [method param-map]
   (if (and (shared-secret-set?) (api-key-set?))
@@ -93,22 +115,30 @@
       (http/get url))
     (println "Shared secret and / or api key not set")))
 
+;; The responses that come back from RTM are xml. This converts into an
+;; xml structure so that we can parse it.
 (defn- to-xml
   "Convert the string to xml"
   [s]
   (let [input-stream (ByteArrayInputStream. (.getBytes s))]
     (clojure.xml/parse input-stream)))
 
-;;-------------------------------------------------------------------------
-;; The actual rtm methods
-;;-------------------------------------------------------------------------
 
-;; see http://www.rememberthemilk.com/services/api/request.rest.rtm
+;; # The Actual RTM Methods
+;; These are the top-level api functions, corresponding (mostly) to
+;; the methods defined
+;; [here](http://www.rememberthemilk.com/services/api/request.rest.rtm)
+
+;; The echo method just echos back the request params. Good for testing
+;; basic connectivity.
+;; Returns the full response map from clj-http.
 (defn rtm-test-echo
   "Calls the rtm.test.echo method with the specified params"
   [param-map]
   (call-api "rtm.test.echo" param-map))
 
+;; Returns a frob which is required in the call to authenticate the
+;; user.
 (defn rtm-auth-getFrob
   "Calls the rtm.auth.getFrob method"
   []
@@ -116,7 +146,8 @@
   (if-let [response (:body (call-api "rtm.auth.getFrob" {}))]
     (first (:content (first (:content (to-xml response)))))))
 
-;; need to generate the url to redirect the user to authenticate
+;; Generates the url that the user needs to access in order to grant
+;; access for the client to access their account.
 (defn authenticate-user
   "See http://www.rememberthemilk.com/services/api/authentication.rtm"
   []

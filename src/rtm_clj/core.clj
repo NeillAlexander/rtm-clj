@@ -9,6 +9,7 @@
 ;; The map that contains all the commands. 
 (def *commands* (atom {}))
 
+;; # Commands
 ;; The entry point for putting the commands into the map. This associates a
 ;; Clojure function with a String, which is the command name. When a command
 ;; is executed, the correct function is looked up from here, and all the
@@ -57,6 +58,7 @@
 (register-command echo "echo")
 (register-command state "state")
 
+;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and
 ;; works out which command to execute.
 (defn lookup-command 
@@ -89,10 +91,12 @@ of the individual words that were entered."
 ;; and returns a function which takes one argument (a number) and returns true
 ;; if that number is compatible with the arity of the arg list.
 ;; For example:
-;; [] - the only valid number is 0
-;; [x] - the only valid number is 1
-;; [& args] - any number >= 0
-;; [x & args] - any number >= 1
+;;
+;; * [] - the only valid number is 0
+;; * [x] - the only valid number is 1
+;; * [& args] - any number >= 0
+;; * [x & args] - any number >= 1
+;;
 ;; This is only a simple check. It doesn't handle arglists that have a destructuring
 ;; form, hence the restriction noted above in the commands section, about using
 ;; explicit args or & args.
@@ -156,6 +160,7 @@ delegate to the call-cmd"
   (call (prompt!))
   (recur))
 
+;; # Main Control Loop
 ;; The main method, the entry point for running from Java.
 ;; It tries to load a previous state from the file in the home directory, to
 ;; retrieve the api key and shared secret, which are needed to interact with
