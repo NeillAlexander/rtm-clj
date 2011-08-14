@@ -1,9 +1,13 @@
 ;; This contains the functions that actually call the Remember the Milk API.
 ;; The API is REST based, so it uses clj-http.
 (ns rtm-clj.api
-  (:require [clj-http.client :as http])
+  (:require [clj-http.client :as http]
+            [clojure.zip :as zip]
+            [clojure.xml :as xml])
+  (:use [clojure.contrib.zip-filter.xml])
   (:import [java.security MessageDigest]
-           [java.io ByteArrayInputStream]))
+           [java.io ByteArrayInputStream]
+           [java.net URI]))
 
 ;; # Constants
 (def *api-url* "http://api.rememberthemilk.com/services/rest/?")
@@ -121,8 +125,12 @@
   "Convert the string to xml"
   [s]
   (let [input-stream (ByteArrayInputStream. (.getBytes s))]
-    (clojure.xml/parse input-stream)))
+    (zip/xml-zip (xml/parse input-stream))))
 
+;; Parse the xml extracting the relevant information
+(defn extract-xml-data
+  [xml-data & preds]
+  (apply xml-> xml-data preds))
 
 ;; # The Actual RTM Methods
 ;; These are the top-level api functions, corresponding (mostly) to
@@ -142,14 +150,24 @@
 (defn rtm-auth-getFrob
   "Calls the rtm.auth.getFrob method"
   []
-  ;; make sure the shared secret and api key are set
   (if-let [response (:body (call-api "rtm.auth.getFrob" {}))]
-    (first (:content (first (:content (to-xml response)))))))
+    (first (extract-xml-data (to-xml response) :frob text))))
 
 ;; Generates the url that the user needs to access in order to grant
-;; access for the client to access their account.
-(defn authenticate-user
+;; access for the client to access their account, and launches the
+;; browser
+(defn request-authorization
   "See http://www.rememberthemilk.com/services/api/authentication.rtm"
   []
   (if-let [frob (rtm-auth-getFrob)]
-    (build-rtm-url {"perms" "delete", "frob" frob} *auth-url-base*)))
+    (if-let [url (build-rtm-url {"perms" "delete", "frob" frob} *auth-url-base*)]
+      (do
+        (println (str "Opening browser at " url))
+        (.browse (java.awt.Desktop/getDesktop) (URI. url))
+        frob))))
+
+;; Puts in the call to the api for an auth token, which will be available
+;; if the user has authorized access
+(defn rtm-auth-getToken
+  [frob]
+  )

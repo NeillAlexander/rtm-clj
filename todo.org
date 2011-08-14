@@ -6,22 +6,17 @@ Split out the string in the call function, rather than in the prompt! function
 ** DONE make help work correctly (print the doc string)
 ** DONE Define a test case for the line parser
 ** DONE ignore empty command (regexp)
-* TODO Set up Marginalia to work with project
-** TODO Find a way to automatically push to gh-pages
-lein marg
-Copy somewhere safe
-Switch to gh-pages branch
-Copy the html file back to index.html
-Add and commit
-Push
-Switch back to master
+* DONE Set up Marginalia to work with project
+** DONE Find a way to automatically push to gh-pages
+** DONE Blog about it
 * TODO Log in and set up api
-** TODO Tidy up the xml parsing - use zipper?
+** DONE Tidy up the xml parsing - use zipper?
 ** TODO Handle api responses correctly - return error codes
-** TODO Write the api to login
-Done up to the point of constructing the url for the authentication
-page. Next I need to auto launch a browser session for that page,
-then can move on to check if logged in, and pull back data
+** TODO Write the get authorisation token method
+*** TODO Test getting token when not authorised
+*** TODO Now authorise the app and test again
+*** TODO Now try restarting the app and getting a token - is the authorisation remembered? I think it should be.
+** TODO Write the check token method
 ** DONE prompt for api key on startup
 *** DONE store the api key in home directory
 ** TODO Prompt for username and password - not needed?
