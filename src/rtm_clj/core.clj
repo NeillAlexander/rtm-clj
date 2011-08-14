@@ -23,7 +23,6 @@
   (println "Good-bye")
   (System/exit 1))
 
-
 (declare lookup-command)
 
 (defn help
@@ -35,16 +34,20 @@
        (println (str cmd ": " (:doc (meta f))))
        (println (str cmd ": command not found")))))
 
-
 (defn echo
   "Echos out the command: echo [text]"
   [& args]
   (apply println args))
 
+(defn state
+  "Echos out the current state"
+  []
+  (println (api/get-state)))
 
 (register-command help "help")
 (register-command exit "exit")
 (register-command echo "echo")
+(register-command state "state")
 
 ;;------------------------------------------------------------
 
@@ -124,8 +127,10 @@ delegate to the call-cmd"
 
 
 (defn -main [& args]
-  (let [api-key (prompt! "Enter api key: ")
-        secret (prompt! "Enter shared secret: ")]
-    (api/set-api-key! api-key)
-    (api/set-shared-secret! secret)
-    (cmd-loop)))
+  (if-not (api/load-state!)
+    (let [api-key (prompt! "Enter api key: ")
+          secret (prompt! "Enter shared secret: ")]
+      (api/set-api-key! api-key)
+      (api/set-shared-secret! secret)
+      (api/save-state)))
+  (cmd-loop))

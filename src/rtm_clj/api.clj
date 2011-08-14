@@ -6,6 +6,7 @@
 ;; constant
 (def *api-url* "http://api.rememberthemilk.com/services/rest/?")
 (def *auth-url-base* "http://www.rememberthemilk.com/services/auth/?")
+(def *state-file* (str (System/getenv "HOME") "/.rtm-clj"))
 
 ;; state
 (def *api-key* (atom ""))
@@ -20,6 +21,33 @@
   "Sets the shared secret for the session"
   [secret]
   (reset! *shared-secret* secret))
+
+(defn get-state
+  []
+  {:api-key @*api-key* :shared-secret @*shared-secret*})
+
+(defn save-state
+  "Save the api key and shared secret to a file"
+  ([]
+     (save-state *state-file*))
+  ([f]
+     (spit f (get-state))))
+
+(defn load-state!
+  "Tries to set up the api key and shared secret from a file"
+  ([]
+     (load-state! *state-file*))
+  ([f]
+     (try
+       (if-let [ state (read-string (slurp f))]
+         (do
+           (set-api-key! (:api-key state))
+           (set-shared-secret! (:shared-secret state))
+           state))
+       (catch Exception e
+         nil))))
+
+;; url stuff
 
 (defn- build-params
   "Builds key=value&key=value&key=value to append onto url"
