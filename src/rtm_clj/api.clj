@@ -1,13 +1,15 @@
 ;; This contains the functions that actually call the Remember the Milk API.
 ;; The API is REST based, so it uses clj-http.
 (ns rtm-clj.api
-  (:require [clj-http.client :as http]
-            [clojure.zip :as zip]
-            [clojure.xml :as xml])
-  (:use [clojure.contrib.zip-filter.xml])
-  (:import [java.security MessageDigest]
-           [java.io ByteArrayInputStream]
-           [java.net URI]))
+
+  (:require
+   [clj-http.client :as http]
+   [clojure.xml :as xml])
+
+  (:import
+   [java.security MessageDigest]
+   [java.io ByteArrayInputStream]
+   [java.net URI]))
 
 ;; # Constants
 (def *api-url* "http://api.rememberthemilk.com/services/rest/?")
@@ -125,15 +127,7 @@
   "Convert the string to xml"
   [s]
   (let [input-stream (ByteArrayInputStream. (.getBytes s))]
-    (zip/xml-zip (xml/parse input-stream))))
-
-;; Parse the xml extracting the relevant information
-;; This uses clojure.contrib.zip-filter/xml->
-;; Pass in preds which will be applied against xml->
-;; returning the value
-(defn extract-xml-data
-  [xml-data & preds]
-  (apply xml-> xml-data preds))
+    (xml/parse input-stream)))
 
 ;; # The Actual RTM Methods
 ;; These are the top-level api functions, corresponding (mostly) to
@@ -148,13 +142,19 @@
   [param-map]
   (call-api "rtm.test.echo" param-map))
 
+;; actually does the work of calling the frob method
+(defn- get-frob
+  []
+  (if-let [response (:body (call-api "rtm.auth.getFrob" {}))]
+    (for [x (xml-seq (to-xml response)) :when (= :frob (:tag x))]
+      (first (:content x)))))
+
 ;; Returns a frob which is required in the call to authenticate the
 ;; user.
 (defn rtm-auth-getFrob
   "Calls the rtm.auth.getFrob method"
   []
-  (if-let [response (:body (call-api "rtm.auth.getFrob" {}))]
-    (first (extract-xml-data (to-xml response) :frob text))))
+  (first (get-frob)))
 
 ;; Generates the url that the user needs to access in order to grant
 ;; access for the client to access their account, and launches the
@@ -173,4 +173,4 @@
 ;; if the user has authorized access
 (defn rtm-auth-getToken
   [frob]
-  )
+  (call-api "rtm.auth.getToken" {"frob" frob}))
