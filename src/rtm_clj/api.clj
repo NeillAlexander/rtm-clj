@@ -24,12 +24,17 @@
 ;; These are the 2 things needed to authenticate with RTM.
 (def *api-key* (atom ""))
 (def *shared-secret* (atom ""))
+(def *authorized* (atom false))
 
 ;; Helper functions to store the state away in the atoms.
 (defn set-api-key!
   "Sets the key for the session"
   [key]
   (reset! *api-key* key))
+
+(defn set-authorized!
+  [b]
+  (reset! *authorized* b))
 
 (defn set-shared-secret!
   "Sets the shared secret for the session"
@@ -39,7 +44,7 @@
 ;; And a helper function to get the current state.
 (defn get-state
   []
-  {:api-key @*api-key* :shared-secret @*shared-secret*})
+  {:api-key @*api-key* :shared-secret @*shared-secret* :authorized @*authorized*})
 
 ;; ## Persistence
 ;; Store the state to a file, using the default location.
@@ -63,6 +68,7 @@
          (do
            (set-api-key! (:api-key state))
            (set-shared-secret! (:shared-secret state))
+           (set-authorized! (:authorized state))
            state))
        (catch Exception e
          nil))))
@@ -90,6 +96,10 @@
 (defn- api-key-set?
   []
   (not (empty? @*api-key*)))
+
+(defn- authorized?
+  []
+  @*authorized*)
 
 ;; See [RTM Authentication](http://www.rememberthemilk.com/services/api/authentication.rtm)
 ;; documentation.
@@ -164,14 +174,24 @@
   "See http://www.rememberthemilk.com/services/api/authentication.rtm"
   []
   (if-let [frob (rtm-auth-getFrob)]
-    (if-let [url (build-rtm-url {"perms" "delete", "frob" frob} *auth-url-base*)]
-      (do
-        (println (str "Opening browser at " url))
-        (.browse (java.awt.Desktop/getDesktop) (URI. url))
-        frob))))
+    (do
+      (if-not (authorized?)
+        (if-let [url (build-rtm-url {"perms" "delete", "frob" frob} *auth-url-base*)]
+          (do
+            (println (str "Opening browser at " url))
+            (.browse (java.awt.Desktop/getDesktop) (URI. url)))))
+      frob)))
 
 ;; Puts in the call to the api for an auth token, which will be available
 ;; if the user has authorized access
 (defn rtm-auth-getToken
   [frob]
   (first (parse-response (call-api "rtm.auth.getToken" {"frob" frob}) :token)))
+
+;; If the token is valid, then it is returned, otherwise nil
+(defn rtm-auth-checkToken
+  "Checks if the token is still valid. Returns the token if it is valid, otherwise
+returns nil"
+  [token]
+  (first (parse-response (call-api "rtm.auth.checkToken" {"auth_token" token}) :token)))
+
