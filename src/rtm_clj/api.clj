@@ -118,7 +118,7 @@
   (if (and (shared-secret-set?) (api-key-set?))
     (let [param-map-with-method (assoc param-map "method" method)
           url (str (build-rtm-url param-map-with-method))]
-      (http/get url))
+      (:body (http/get url)))
     (println "Shared secret and / or api key not set")))
 
 ;; The responses that come back from RTM are xml. This converts into an
@@ -139,14 +139,15 @@
 ;; Returns the full response map from clj-http.
 (defn rtm-test-echo
   "Calls the rtm.test.echo method with the specified params"
-  [param-map]
-  (call-api "rtm.test.echo" param-map))
+  ([]
+     (rtm-test-echo {"dummy" "value"}))
+  ([param-map]
+     (call-api "rtm.test.echo" param-map)))
 
-;; actually does the work of calling the frob method
-(defn- get-frob
-  []
-  (if-let [response (:body (call-api "rtm.auth.getFrob" {}))]
-    (for [x (xml-seq (to-xml response)) :when (= :frob (:tag x))]
+(defn- parse-response
+  [response tag-name]
+  (when response
+    (for [x (xml-seq (to-xml response)) :when (= tag-name (:tag x))]
       (first (:content x)))))
 
 ;; Returns a frob which is required in the call to authenticate the
@@ -154,11 +155,11 @@
 (defn rtm-auth-getFrob
   "Calls the rtm.auth.getFrob method"
   []
-  (first (get-frob)))
+  (first (parse-response (call-api "rtm.auth.getFrob" {}) :frob)))
 
 ;; Generates the url that the user needs to access in order to grant
 ;; access for the client to access their account, and launches the
-;; browser
+;; browser. Returns the frob.
 (defn request-authorization
   "See http://www.rememberthemilk.com/services/api/authentication.rtm"
   []
@@ -173,4 +174,4 @@
 ;; if the user has authorized access
 (defn rtm-auth-getToken
   [frob]
-  (call-api "rtm.auth.getToken" {"frob" frob}))
+  (first (parse-response (call-api "rtm.auth.getToken" {"frob" frob}) :token)))

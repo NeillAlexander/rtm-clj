@@ -14,15 +14,25 @@ Split out the string in the call function, rather than in the prompt! function
 ** DONE prompt for api key on startup
 *** DONE store the api key in home directory
 ** DONE Store the api key in home directory file
-** TODO Write the get authorisation token method
-*** TODO Test getting token when not authorised
-*** TODO Now authorise the app and test again
-*** TODO Now try restarting the app and getting a token - is the authorisation remembered? I think it should be.
+** DONE Write the get authorisation token method
+*** DONE Test getting token when not authorised
+Doesn't work - get a message "Did you authenticate"
+*** DONE Now authorise the app and test again
+this works
+(def my-frob (request-authorization))
+(rtm-auth-getToken my-frob)
+*** DONE Now try restarting the app and getting a token - is the authorisation remembered? I think it should be.
+The frob needs to be authorized, and then you can get the token. Seems
+like that will be every time the app is run.
+** DONE Parse the xml on the get token method
+** TODO Store the fact that the app has been authorized in state and, if so, don't bother opening the browser
+Test this by revoking auth on web-abb
 ** TODO Write the check token method
 ** TODO Prompt for username and password - not needed?
 ** TODO Authenticate against the rtm api
 ** TODO Throw an exception if api key etc not set? Catch at repl?
 * TODO Handle api responses correctly - return error codes
+** TODO Check for status ok and status fail
 * TODO Make the prompt more general - pass in a validation function which is run immediately?
 * TODO Write the api to pull back initial data
 Test it manually
