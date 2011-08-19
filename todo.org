@@ -1,3 +1,8 @@
+* Remember the Milk Command Line Tool
+This is going to be a very simple RTM command line tool. There is no
+point trying to reproduce all the functionality. It's a learning tool
+after all. So define the set of tasks that you want to be able to do
+and build the api to service it.
 * DONE Write the command line prompt
 ** DONE make prompt configurable
 ** DONE Make it easier to call command from repl: call "help like this"
@@ -35,23 +40,29 @@ Not needed
 ** DONE Authenticate against the rtm api
 ** DONE Throw an exception if api key etc not set? Catch at repl?
 * DONE Display all lists
+* DONE Status command - display the current status (logged in etc)
 * DONE Command to pull back all tasks for a list
 ** DONE All tasks
 ** DONE Tasks for particular list
 ** DONE With filter
-
 * TODO Write a list command which lists all the lists from the prompt
+** TODO Keep a store of the last response for referring back to
 * TODO Add arg which displays all tasks in a list
 So:
 list - displays all lists, with a number
 list 0 - shows all the tasks for that list
-* TODO Make the prompt more general - pass in a validation function which is run immediately?
-* TODO Write macro for registering a command
+* TODO Provide a way to mark a task as complete
+* TODO Provide a way to delete a task
+* TODO Provide a way to create a task
+* TODO Write a high level set of tasks that help me do my weekly RTM process
+
+Maybes
 * TODO Provide a way to set up aliases
 So can have short commands all mapped to same
 ** TODO Incorporate into macro??
 ** TODO For example, once have a way to search can save that as an alias
-* TODO Status command - display the current status (logged in etc)
+* TODO Write macro for registering a command
+* TODO Make the prompt more general - pass in a validation function which is run immediately?
 * TODO Provide a command to change the prompt
 * TODO Make the api reusable for other people
 ** TODO Don't have it just print error. Throw exceptions etc.
