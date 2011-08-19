@@ -9,7 +9,7 @@ Split out the string in the call function, rather than in the prompt! function
 * DONE Set up Marginalia to work with project
 ** DONE Find a way to automatically push to gh-pages
 ** DONE Blog about it
-* TODO Log in and set up api
+* DONE Log in and set up api
 ** DONE Tidy up the xml parsing - use zipper?
 ** DONE prompt for api key on startup
 *** DONE store the api key in home directory
@@ -25,15 +25,15 @@ this works
 The frob needs to be authorized, and then you can get the token. Seems
 like that will be every time the app is run.
 ** DONE Parse the xml on the get token method
-** TODO Write the check token method
-When the token is valid, store the authorized state so that the
-browser isn't opened again.
-** TODO Store the fact that the app has been authorized in state and, if so, don't bother opening the browser
+** DONE Write the check token method
+** DONE Store the fact that the app has been authorized in state and, if so, don't bother opening the browser
 Test this by revoking auth on web-app (currently revoked - make the
 check token work first)
-** TODO Prompt for username and password - not needed?
-** TODO Authenticate against the rtm api
-** TODO Throw an exception if api key etc not set? Catch at repl?
+This doesn't work
+** DONE Prompt for username and password - not needed?
+Not needed
+** DONE Authenticate against the rtm api
+** DONE Throw an exception if api key etc not set? Catch at repl?
 * TODO Handle api responses correctly - return error codes
 ** TODO Check for status ok and status fail
 * TODO Make the prompt more general - pass in a validation function which is run immediately?
