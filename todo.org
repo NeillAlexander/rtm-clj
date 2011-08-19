@@ -55,17 +55,17 @@ list 0 - shows all the tasks for that list
 * TODO Provide a way to delete a task
 * TODO Provide a way to create a task
 * TODO Write a high level set of tasks that help me do my weekly RTM process
-
-Maybes
-* TODO Provide a way to set up aliases
+* TODO Tune the code as a learning exercise. Make as concise, elegant as possible
+* Maybes
+** TODO Provide a way to set up aliases
 So can have short commands all mapped to same
 ** TODO Incorporate into macro??
 ** TODO For example, once have a way to search can save that as an alias
-* TODO Write macro for registering a command
-* TODO Make the prompt more general - pass in a validation function which is run immediately?
-* TODO Provide a command to change the prompt
-* TODO Make the api reusable for other people
+** TODO Write macro for registering a command
+** TODO Make the prompt more general - pass in a validation function which is run immediately?
+** TODO Provide a command to change the prompt
+** TODO Make the api reusable for other people
 ** TODO Don't have it just print error. Throw exceptions etc.
 ** TODO Remove all println from the api part
-* TODO Remove the dependency on the monolithic clojure contrib, if possible
+** TODO Remove the dependency on the monolithic clojure contrib, if possible
 http://dev.clojure.org/display/doc/Clojure+Contrib
