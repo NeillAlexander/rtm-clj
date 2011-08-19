@@ -34,11 +34,9 @@ This doesn't work
 Not needed
 ** DONE Authenticate against the rtm api
 ** DONE Throw an exception if api key etc not set? Catch at repl?
-* TODO Handle api responses correctly - return error codes
-** TODO Check for status ok and status fail
+* TODO Display all lists
+* TODO Command to pull back all tasks for a list
 * TODO Make the prompt more general - pass in a validation function which is run immediately?
-* TODO Write the api to pull back initial data
-Test it manually
 * TODO Write macro for registering a command
 * TODO Provide a way to set up aliases
 So can have short commands all mapped to same

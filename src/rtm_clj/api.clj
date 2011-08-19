@@ -24,8 +24,17 @@
 ;; These are the 2 things needed to authenticate with RTM.
 (def *api-key* (atom ""))
 (def *shared-secret* (atom ""))
+(def *token* (atom nil))
 
 ;; Helper functions to store the state away in the atoms.
+(defn get-token
+  []
+  @*token*)
+
+(defn set-token!
+  [token]
+  (reset! *token* token))
+
 (defn set-api-key!
   "Sets the key for the session"
   [key]
@@ -39,7 +48,7 @@
 ;; And a helper function to get the current state.
 (defn get-state
   []
-  {:api-key @*api-key* :shared-secret @*shared-secret*})
+  {:api-key @*api-key* :shared-secret @*shared-secret* :token (get-token)})
 
 ;; ## Persistence
 ;; Store the state to a file, using the default location.
@@ -63,6 +72,7 @@
          (do
            (set-api-key! (:api-key state))
            (set-shared-secret! (:shared-secret state))
+           (set-token! (:token state))
            state))
        (catch Exception e
          nil))))
@@ -186,4 +196,18 @@
 returns nil"
   [token]
   (first (parse-response (call-api "rtm.auth.checkToken" {"auth_token" token}) :token)))
+
+;; Checks to see if we have a valid token. If not then launches the browser for authorization.
+;; If a valid token is returned, returns true, otherwise if login failed, returns false
+(defn login
+  "This is a helper method that pulls the whole auth process together"
+  []
+  (if-not (rtm-auth-checkToken (get-token))
+    (if-let [new-token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization)))]
+      (do
+        (set-token! new-token)
+        (save-state)
+        true)
+      false)
+    true))
 
