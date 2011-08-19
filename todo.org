@@ -34,8 +34,17 @@ This doesn't work
 Not needed
 ** DONE Authenticate against the rtm api
 ** DONE Throw an exception if api key etc not set? Catch at repl?
-* TODO Display all lists
-* TODO Command to pull back all tasks for a list
+* DONE Display all lists
+* DONE Command to pull back all tasks for a list
+** DONE All tasks
+** DONE Tasks for particular list
+** DONE With filter
+
+* TODO Write a list command which lists all the lists from the prompt
+* TODO Add arg which displays all tasks in a list
+So:
+list - displays all lists, with a number
+list 0 - shows all the tasks for that list
 * TODO Make the prompt more general - pass in a validation function which is run immediately?
 * TODO Write macro for registering a command
 * TODO Provide a way to set up aliases

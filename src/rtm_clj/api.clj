@@ -221,4 +221,18 @@ returns nil"
   []
   (if-let [list-xml (to-xml (call-api "rtm.lists.getList" {"auth_token" (get-token)}))]
     (for [x (xml-seq list-xml) :when (= :list (:tag x))]
-      {:id (:id (:attrs x)) :name (:name (:attrs x))})))
+      (:attrs x))))
+
+;; Returns all the tasks, or the tasks for a particular list. Supports the RTM
+;; search filters. By default it uses status:incomplete to only return incomplete
+;; tasks
+;; NB: it only returns a sub-set of the data currently. I may add more in as I go along...
+(defn rtm-tasks-getList
+  "Gets all the tasks for a particular list, or all tasks if not list-id provided"
+  ([list-id]
+     (rtm-tasks-getList list-id "status:incomplete"))
+  ([list-id list-filter]
+     (if-let [xml (to-xml (call-api "rtm.tasks.getList" {"auth_token" (get-token), "list_id" list-id, "filter" list-filter}))]
+       (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
+         (for [task (:content task-series) :when (= :task (:tag task))]
+           (assoc (:attrs task-series) :due (:due (:attrs task))))))))
