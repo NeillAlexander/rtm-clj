@@ -201,13 +201,24 @@ returns nil"
 ;; If a valid token is returned, returns true, otherwise if login failed, returns false
 (defn login
   "This is a helper method that pulls the whole auth process together"
-  []
-  (if-not (rtm-auth-checkToken (get-token))
-    (if-let [new-token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization)))]
-      (do
-        (set-token! new-token)
-        (save-state)
-        true)
-      false)
-    true))
+  ([]
+     (login true))
+  ([load-state]
+     (if load-state (load-state!))
+     (if-not (rtm-auth-checkToken (get-token))
+       (if-let [new-token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization)))]
+         (do
+           (set-token! new-token)
+           (save-state)
+           true)
+         false)
+       true)))
 
+;; Returns the lists for the user as a sequence in the following format:
+;; ({:id "list_id" :name "list_name"} {:id "another_list" :name "another list name"} etc)
+(defn rtm-lists-getList
+  "Returns the lists for the user"
+  []
+  (if-let [list-xml (to-xml (call-api "rtm.lists.getList" {"auth_token" (get-token)}))]
+    (for [x (xml-seq list-xml) :when (= :list (:tag x))]
+      {:id (:id (:attrs x)) :name (:name (:attrs x))})))
