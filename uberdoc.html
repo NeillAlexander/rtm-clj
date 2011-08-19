@@ -2530,20 +2530,27 @@ $(document).ready(function() {
 </div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.2.1</td></tr><tr><td class="dep-name">clj-http</td><td class="dotted"><hr /></td><td class="dep-version">0.1.3</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.6.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#rtm-clj.api">rtm-clj.api</a></li><li><a href="#rtm-clj.core">rtm-clj.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.api" name="rtm-clj.api"><h1 class="project-name">rtm-clj.api</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This contains the functions that actually call the Remember the Milk API.
 The API is REST based, so it uses clj-http.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.api
-  (:require [clj-http.client :as http]
-            [clojure.zip :as zip]
-            [clojure.xml :as xml])
-  (:use [clojure.contrib.zip-filter.xml])
-  (:import [java.security MessageDigest]
-           [java.io ByteArrayInputStream]
-           [java.net URI]))</pre></tr><tr><td class="docs"><h1>Constants</h1>
+  (:require
+   [clj-http.client :as http]
+   [clojure.xml :as xml])
+  (:import
+   [java.security MessageDigest]
+   [java.io ByteArrayInputStream]
+   [java.net URI]))</pre></tr><tr><td class="docs"><h1>Constants</h1>
 </td><td class="codes" /><pre class="brush: clojure">(def *api-url* &quot;http://api.rememberthemilk.com/services/rest/?&quot;)
 (def *auth-url-base* &quot;http://www.rememberthemilk.com/services/auth/?&quot;)</pre></tr><tr><td class="docs"><p>At some point I may make this configurable. This is where the
 state is stored.</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *state-file* (str (System/getenv &quot;HOME&quot;) &quot;/.rtm-clj&quot;))</pre></tr><tr><td class="docs"><h1>State</h1>
 </td><td class="codes" /></tr><tr><td class="docs"><p>These are the 2 things needed to authenticate with RTM.</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *api-key* (atom ))
-(def *shared-secret* (atom ))</pre></tr><tr><td class="docs"><p>Helper functions to store the state away in the atoms.</p>
+(def *shared-secret* (atom ))
+(def *token* (atom nil))</pre></tr><tr><td class="docs"><p>Helper functions to store the state away in the atoms.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn get-token
+  []
+  @*token*)</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn set-token!
+  [token]
+  (reset! *token* token))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn set-api-key!
   &quot;Sets the key for the session&quot;
   [key]
@@ -2554,7 +2561,7 @@ state is stored.</p>
   (reset! *shared-secret* secret))</pre></tr><tr><td class="docs"><p>And a helper function to get the current state.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn get-state
   []
-  {:api-key @*api-key* :shared-secret @*shared-secret*})</pre></tr><tr><td class="docs"><h2>Persistence</h2>
+  {:api-key @*api-key* :shared-secret @*shared-secret* :token (get-token)})</pre></tr><tr><td class="docs"><h2>Persistence</h2>
 
 <p>Store the state to a file, using the default location.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn save-state
@@ -2575,6 +2582,7 @@ the current state.</p>
          (do
            (set-api-key! (:api-key state))
            (set-shared-secret! (:shared-secret state))
+           (set-token! (:token state))
            state))
        (catch Exception e
          nil))))</pre></tr><tr><td class="docs"><h1>URL Building</h1>
@@ -2617,20 +2625,14 @@ The param-map contains the key/value pairs for the http request params.</p>
   (if (and (shared-secret-set?) (api-key-set?))
     (let [param-map-with-method (assoc param-map &quot;method&quot; method)
           url (str (build-rtm-url param-map-with-method))]
-      (http/get url))
+      (:body (http/get url)))
     (println &quot;Shared secret and / or api key not set&quot;)))</pre></tr><tr><td class="docs"><p>The responses that come back from RTM are xml. This converts into an
 xml structure so that we can parse it.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- to-xml
   &quot;Convert the string to xml&quot;
   [s]
   (let [input-stream (ByteArrayInputStream. (.getBytes s))]
-    (zip/xml-zip (xml/parse input-stream))))</pre></tr><tr><td class="docs"><p>Parse the xml extracting the relevant information
-This uses clojure.contrib.zip-filter/xml->
-Pass in preds which will be applied against xml->
-returning the value</p>
-</td><td class="codes" /><pre class="brush: clojure">(defn extract-xml-data
-  [xml-data &amp; preds]
-  (apply xml-&gt; xml-data preds))</pre></tr><tr><td class="docs"><h1>The Actual RTM Methods</h1>
+    (xml/parse input-stream)))</pre></tr><tr><td class="docs"><h1>The Actual RTM Methods</h1>
 
 <p>These are the top-level api functions, corresponding (mostly) to
 the methods defined
@@ -2640,28 +2642,78 @@ basic connectivity.
 Returns the full response map from clj-http.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-test-echo
   &quot;Calls the rtm.test.echo method with the specified params&quot;
-  [param-map]
-  (call-api &quot;rtm.test.echo&quot; param-map))</pre></tr><tr><td class="docs"><p>Returns a frob which is required in the call to authenticate the
+  ([]
+     (rtm-test-echo {&quot;dummy&quot; &quot;value&quot;}))
+  ([param-map]
+     (call-api &quot;rtm.test.echo&quot; param-map)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- parse-response
+  [response tag-name]
+  (when response
+    (for [x (xml-seq (to-xml response)) :when (= tag-name (:tag x))]
+      (first (:content x)))))</pre></tr><tr><td class="docs"><p>Returns a frob which is required in the call to authenticate the
 user.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-auth-getFrob
   &quot;Calls the rtm.auth.getFrob method&quot;
   []
-  (if-let [response (:body (call-api &quot;rtm.auth.getFrob&quot; {}))]
-    (first (extract-xml-data (to-xml response) :frob text))))</pre></tr><tr><td class="docs"><p>Generates the url that the user needs to access in order to grant
+  (first (parse-response (call-api &quot;rtm.auth.getFrob&quot; {}) :frob)))</pre></tr><tr><td class="docs"><p>Generates the url that the user needs to access in order to grant
 access for the client to access their account, and launches the
-browser</p>
+browser. Returns the frob.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn request-authorization
   &quot;See http://www.rememberthemilk.com/services/api/authentication.rtm&quot;
   []
   (if-let [frob (rtm-auth-getFrob)]
-    (if-let [url (build-rtm-url {&quot;perms&quot; &quot;delete&quot;, &quot;frob&quot; frob} *auth-url-base*)]
-      (do
-        (println (str &quot;Opening browser at &quot; url))
-        (.browse (java.awt.Desktop/getDesktop) (URI. url))
-        frob))))</pre></tr><tr><td class="docs"><p>Puts in the call to the api for an auth token, which will be available
-if the user has authorized access</p>
+    (do
+      (if-let [url (build-rtm-url {&quot;perms&quot; &quot;delete&quot;, &quot;frob&quot; frob} *auth-url-base*)]
+        (do
+          (println (str &quot;Opening browser at &quot; url))
+          (.browse (java.awt.Desktop/getDesktop) (URI. url))))
+      frob)))</pre></tr><tr><td class="docs"><p>Puts in the call to the api for an auth token, which will be available
+if the user has authorized access
+can do this
+(def token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization))))
+if that is truthy, then we're in</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-auth-getToken
-  [frob])</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
+  [frob]
+  (first (parse-response (call-api &quot;rtm.auth.getToken&quot; {&quot;frob&quot; frob}) :token)))</pre></tr><tr><td class="docs"><p>If the token is valid, then it is returned, otherwise nil</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-auth-checkToken
+  &quot;Checks if the token is still valid. Returns the token if it is valid, otherwise
+returns nil&quot;
+  [token]
+  (first (parse-response (call-api &quot;rtm.auth.checkToken&quot; {&quot;auth_token&quot; token}) :token)))</pre></tr><tr><td class="docs"><p>Checks to see if we have a valid token. If not then launches the browser for authorization.
+If a valid token is returned, returns true, otherwise if login failed, returns false</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn login
+  &quot;This is a helper method that pulls the whole auth process together&quot;
+  ([]
+     (login true))
+  ([load-state]
+     (if load-state (load-state!))
+     (if-not (rtm-auth-checkToken (get-token))
+       (if-let [new-token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization)))]
+         (do
+           (set-token! new-token)
+           (save-state)
+           true)
+         false)
+       true)))</pre></tr><tr><td class="docs"><p>Returns the lists for the user as a sequence in the following format:
+({:id "list<em>id" :name "list</em>name"} {:id "another_list" :name "another list name"} etc)</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-lists-getList
+  &quot;Returns the lists for the user&quot;
+  []
+  (if-let [list-xml (to-xml (call-api &quot;rtm.lists.getList&quot; {&quot;auth_token&quot; (get-token)}))]
+    (for [x (xml-seq list-xml) :when (= :list (:tag x))]
+      (:attrs x))))</pre></tr><tr><td class="docs"><p>Returns all the tasks, or the tasks for a particular list. Supports the RTM
+search filters. By default it uses status:incomplete to only return incomplete
+tasks
+NB: it only returns a sub-set of the data currently. I may add more in as I go along...</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-getList
+  &quot;Gets all the tasks for a particular list, or all tasks if not list-id provided&quot;
+  ([list-id]
+     (rtm-tasks-getList list-id &quot;status:incomplete&quot;))
+  ([list-id list-filter]
+     (if-let [xml (to-xml (call-api &quot;rtm.tasks.getList&quot; {&quot;auth_token&quot; (get-token), &quot;list_id&quot; list-id, &quot;filter&quot; list-filter}))]
+       (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
+         (for [task (:content task-series) :when (= :task (:tag task))]
+           (assoc (:attrs task-series) :due (:due (:attrs task))))))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
 command line application. The idea is that it displays a prompt, you enter
 a command, which is then executed. It's essentially a kind of REPL or shell.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.core
@@ -2703,12 +2755,18 @@ otherwise the arity check will fail. </p>
 </td><td class="codes" /><pre class="brush: clojure">(defn state
   &quot;Echos out the current state&quot;
   []
-  (println (api/get-state)))</pre></tr><tr><td class="docs"><p>At some point I think I will replace these separate defn and register-command
+  (println (api/get-state)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn display-lists
+  &quot;Displays all the lists&quot;
+  []
+  (if-let [lists (api/rtm-lists-getList)]
+    (println lists)))</pre></tr><tr><td class="docs"><p>At some point I think I will replace these separate defn and register-command
 calls with a macro that combines them all.</p>
 </td><td class="codes" /><pre class="brush: clojure">(register-command help &quot;help&quot;)
 (register-command exit &quot;exit&quot;)
 (register-command echo &quot;echo&quot;)
-(register-command state &quot;state&quot;)</pre></tr><tr><td class="docs"><h1>Dispatching Commands</h1>
+(register-command state &quot;state&quot;)
+(register-command display-lists &quot;list&quot;)</pre></tr><tr><td class="docs"><h1>Dispatching Commands</h1>
 
 <p>This section of the code is the part that parses the input from the user, and
 works out which command to execute.</p>
@@ -2811,5 +2869,9 @@ the Remember the Milk API. Once it is all set up, it just calls the cmd-loop.</p
       (api/set-api-key! api-key)
       (api/set-shared-secret! secret)
       (api/save-state)))
-  (cmd-loop))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_rtm-clj.api">rtm-clj.api</li><li class="floating-toc-li" id="floating-toc_rtm-clj.core">rtm-clj.core</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+  (if (api/login)
+    (cmd-loop)
+    (do
+      (println &quot;Login failed&quot;)
+      (exit))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_rtm-clj.api">rtm-clj.api</li><li class="floating-toc-li" id="floating-toc_rtm-clj.core">rtm-clj.core</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>
