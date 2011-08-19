@@ -51,12 +51,19 @@
   []
   (println (api/get-state)))
 
+(defn display-lists
+  "Displays all the lists"
+  []
+  (if-let [lists (api/rtm-lists-getList)]
+    (println lists)))
+
 ;; At some point I think I will replace these separate defn and register-command
 ;; calls with a macro that combines them all.
 (register-command help "help")
 (register-command exit "exit")
 (register-command echo "echo")
 (register-command state "state")
+(register-command display-lists "list")
 
 ;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and
@@ -172,4 +179,8 @@ delegate to the call-cmd"
       (api/set-api-key! api-key)
       (api/set-shared-secret! secret)
       (api/save-state)))
-  (cmd-loop))
+  (if (api/login)
+    (cmd-loop)
+    (do
+      (println "Login failed")
+      (exit))))
