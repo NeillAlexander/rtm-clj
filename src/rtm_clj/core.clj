@@ -34,8 +34,9 @@
 ;; are just Clojure functions. However, due to a limitation in the current
 ;; implementation, the commands should only use explict parameters or & args,
 ;; otherwise the arity check will fail. 
-
-(defn exit
+;; Note that for the function to be picked up as a command, it must have the
+;; :cmd metadata, defining the name
+(defn ^{:cmd "exit"} exit
   "Exits the application"
   []
   (println "Good-bye")
@@ -43,7 +44,7 @@
 
 (declare lookup-command)
 
-(defn help
+(defn ^{:cmd "help"} help
   "Displays all the available commands, or provides help for a particular command"
   ([]
      (apply println (sort (keys @*commands*))))
@@ -52,19 +53,19 @@
        (println (str cmd ": " (:doc (meta f))))
        (println (str cmd ": command not found")))))
 
-(defn start-swank
+(defn ^{:cmd "swank"} start-swank
   "Start a swank server on the specified port. Defaults to 4005."
   ([]
      (swank/start-repl 4005))
   ([port]
      (swank/start-repl (as-int port))))
 
-(defn echo
+(defn ^{:cmd "echo"} echo
   "Echos out the command: echo [text]"
   [& args]
   (apply println args))
 
-(defn state
+(defn ^{:cmd "state"} state
   "Echos out the current state"
   []
   (println (api/get-state)))
@@ -123,7 +124,7 @@
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
-(defn display-lists
+(defn ^{:cmd "list"} display-lists
   "Displays all the lists or all the tasks for the selected list"
   ([]
      (if-let [lists (api/rtm-lists-getList)]
@@ -140,15 +141,6 @@
               (indexify (create-id-map tasks))
               :tasks
               (str "List: " (:name the-list)))))))))
-
-;; At some point I think I will replace these separate defn and register-command
-;; calls with a macro that combines them all.
-(register-command help "help")
-(register-command exit "exit")
-(register-command echo "echo")
-(register-command state "state")
-(register-command display-lists "list")
-(register-command start-swank "swank")
 
 ;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and
@@ -254,12 +246,19 @@ delegate to the call-cmd"
   (call (prompt!))
   (recur))
 
+;; Dynamically discover commands
+(defn- discover-commands
+  []
+  (doseq [f (vals (ns-publics 'rtm-clj.core)) :when (:cmd (meta f)) :let [name (:cmd (meta f))]]
+    (register-command f name)))
+
 ;; # Main Control Loop
 ;; The main method, the entry point for running from Java.
 ;; It tries to load a previous state from the file in the home directory, to
 ;; retrieve the api key and shared secret, which are needed to interact with
 ;; the Remember the Milk API. Once it is all set up, it just calls the cmd-loop.
 (defn -main [& args]
+  (discover-commands)
   (if-not (api/load-state!)
     (let [api-key (prompt! "Enter api key: ")
           secret (prompt! "Enter shared secret: ")]
