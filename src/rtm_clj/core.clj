@@ -108,6 +108,18 @@
       (println))
     (println "None")))
 
+;; used twice, so factored out
+(defn- indexify
+  "Creates a map using the supplied collection, where each key is a number starting at zero"
+  [c]
+  (apply array-map (interleave (iterate inc 0) c)))
+
+(defn- create-id-map
+  "Creates the map that is used to output the lists, tasks etc"
+  [items]
+  (for [item items :let [id-map {:id (:id item), :name (:name item)}]]
+    id-map))
+
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
@@ -115,19 +127,18 @@
   "Displays all the lists or all the tasks for the selected list"
   ([]
      (if-let [lists (api/rtm-lists-getList)]
-       ;; create the correct map format for display
        (display-and-cache
-        (apply array-map (interleave (iterate inc 0) (for [l lists :let [lm {:id (:id l), :name (:name l)}]] lm)))
-        :lists ;; the key for the cache
-        "Lists"))) ;; the title
+        (indexify (create-id-map lists))
+        :lists
+        "Lists")))
   ([i]
      (let [idx (as-int i)]
        (if-let [cached-lists (cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
            (if-let [tasks (flatten (api/rtm-tasks-getList (:id the-list)))]
              (display-and-cache
-              (apply array-map (interleave (iterate inc 0) (for [t tasks :let [lm {:id (:id t), :name (:name t)}]] lm)))
-              :tasks ;; the key for the cache
+              (indexify (create-id-map tasks))
+              :tasks
               (str "List: " (:name the-list)))))))))
 
 ;; At some point I think I will replace these separate defn and register-command
