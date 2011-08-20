@@ -2,8 +2,9 @@
 ;; command line application. The idea is that it displays a prompt, you enter
 ;; a command, which is then executed. It's essentially a kind of REPL or shell.
 (ns rtm-clj.core
-  (:require [clojure.string :as str])
-  (:require [rtm-clj.api :as api])
+  (:require [clojure.string :as str]
+            [rtm-clj.api :as api]
+            [swank.swank :as swank])
   (:gen-class :main true))
 
 ;; The map that contains all the commands. 
@@ -41,6 +42,13 @@
        (println (str cmd ": " (:doc (meta f))))
        (println (str cmd ": command not found")))))
 
+(defn start-swank
+  "Start a swank server on the specified port. Defaults to 4005."
+  ([]
+     (start-swank 4005))
+  ([port]
+     (swank/start-repl (Integer/parseInt port))))
+
 (defn echo
   "Echos out the command: echo [text]"
   [& args]
@@ -64,6 +72,7 @@
 (register-command echo "echo")
 (register-command state "state")
 (register-command display-lists "list")
+(register-command start-swank "swank")
 
 ;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and
@@ -144,7 +153,9 @@ with the rest of the args"
   [cmd & args]
   (if-let [f (lookup-command cmd)]
     (if (arity-matches-args f args)
-      (apply f args)
+      (try
+        (apply f args)
+        (catch Exception e (println (str "Exception: " (.getMessage e)) )))
       (do
         (println (str cmd ": wrong number of args"))
         (help cmd)))
