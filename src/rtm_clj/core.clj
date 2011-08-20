@@ -13,6 +13,13 @@
 ;; This is the cache for the session
 (def *cache* (atom {}))
 
+;; utility functions
+(defmulti as-int class)
+(defmethod as-int Number [v]
+  (int v))
+(defmethod as-int String [s]
+  (Integer/parseInt s))
+
 ;; # Commands
 ;; The entry point for putting the commands into the map. This associates a
 ;; Clojure function with a String, which is the command name. When a command
@@ -50,7 +57,7 @@
   ([]
      (swank/start-repl 4005))
   ([port]
-     (swank/start-repl (Integer/parseInt port))))
+     (swank/start-repl (as-int port))))
 
 (defn echo
   "Echos out the command: echo [text]"
@@ -79,24 +86,49 @@
 
 (defn- title
   [t]
+  (println)
   (divider)
   (println t)
   (divider))
+
+;; Display the results. The contract is that the map must be in the following format:
+;; {0, {:id 123 :name "Inbox"}, 1 {:id 1234 :name "Sent"}}
+;; The map is cached using the provided key for future lookup.
+;; That is the mechanism for storing data in the session.
+(defn- display-and-cache
+  "Requires map in format: id, {:id id :name name}"
+  [id-map cache-id heading]
+  (if (not (zero? (count id-map)))
+    (do
+      (cache-put cache-id id-map)
+      (title heading)
+      (doseq [item id-map]
+        (println (str (key item) " - " (:name (val item)))))
+      (divider)
+      (println))
+    (println "None")))
 
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
 (defn display-lists
-  "Displays all the lists"
-  []
-  (if-let [lists (api/rtm-lists-getList)]
-    ;; create a map of index number to list id and name, for future reference
-    (let [list-ids (apply array-map (interleave (iterate inc 0) (for [l lists :let [lm {:id (:id l), :name (:name l)}]] lm)))]
-      (cache-put :lists list-ids)
-      (title "Lists")
-      (doseq [a-list list-ids]
-        (println (str (key a-list) " - " (:name (val a-list)))))
-      (divider))))
+  "Displays all the lists or all the tasks for the selected list"
+  ([]
+     (if-let [lists (api/rtm-lists-getList)]
+       ;; create the correct map format for display
+       (display-and-cache
+        (apply array-map (interleave (iterate inc 0) (for [l lists :let [lm {:id (:id l), :name (:name l)}]] lm)))
+        :lists ;; the key for the cache
+        "Lists"))) ;; the title
+  ([i]
+     (let [idx (as-int i)]
+       (if-let [cached-lists (cache-get :lists)]
+         (if-let [the-list (cached-lists idx)]
+           (if-let [tasks (flatten (api/rtm-tasks-getList (:id the-list)))]
+             (display-and-cache
+              (apply array-map (interleave (iterate inc 0) (for [t tasks :let [lm {:id (:id t), :name (:name t)}]] lm)))
+              :tasks ;; the key for the cache
+              (str "List: " (:name the-list)))))))))
 
 ;; At some point I think I will replace these separate defn and register-command
 ;; calls with a macro that combines them all.
