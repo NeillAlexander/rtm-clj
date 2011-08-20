@@ -10,6 +10,9 @@
 ;; The map that contains all the commands. 
 (def *commands* (atom {}))
 
+;; This is the cache for the session
+(def *cache* (atom {}))
+
 ;; # Commands
 ;; The entry point for putting the commands into the map. This associates a
 ;; Clojure function with a String, which is the command name. When a command
@@ -45,7 +48,7 @@
 (defn start-swank
   "Start a swank server on the specified port. Defaults to 4005."
   ([]
-     (start-swank 4005))
+     (swank/start-repl 4005))
   ([port]
      (swank/start-repl (Integer/parseInt port))))
 
@@ -59,11 +62,41 @@
   []
   (println (api/get-state)))
 
+;; This is the key part of the app. Display a set of values that the user
+;; then selects by number
+(defn- cache-put
+  "Used to store data for the session"
+  [key data]
+  (swap! *cache* assoc key data))
+
+(defn- cache-get
+  [key]
+  (@*cache* key))
+
+(defn- divider
+  []
+  (println "============================================================"))
+
+(defn- title
+  [t]
+  (divider)
+  (println t)
+  (divider))
+
+;; Not only displays the lists, but also stores them away for reference, so user can do
+;; list 0
+;; to display all the tasks in list 0
 (defn display-lists
   "Displays all the lists"
   []
   (if-let [lists (api/rtm-lists-getList)]
-    (println lists)))
+    ;; create a map of index number to list id and name, for future reference
+    (let [list-ids (apply array-map (interleave (iterate inc 0) (for [l lists :let [lm {:id (:id l), :name (:name l)}]] lm)))]
+      (cache-put :lists list-ids)
+      (title "Lists")
+      (doseq [a-list list-ids]
+        (println (str (key a-list) " - " (:name (val a-list)))))
+      (divider))))
 
 ;; At some point I think I will replace these separate defn and register-command
 ;; calls with a macro that combines them all.
