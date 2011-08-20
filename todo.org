@@ -50,16 +50,22 @@ Not needed
 * DONE Add arg which displays all tasks in a list
 In progress. Need to work out how to display the tasks. Will be same
 as lists basically.
-* TODO Write macro for registering a command
+* TODO Investigate whether can look up functions using ns
+Yes!! (def dl ('display-lists (ns-map 'rtm-clj.core)))
+** TODO Move all commands into a separate namespace and look them up dynamically
+Add meta :rtm-aliases ["list" "ls" "l"]
+** TODO Make sure aliases don't clash
+** TODO Make sure arity checks still work
 * TODO Provide a way to mark a task as complete
 * TODO Provide a way to delete a task
 * TODO Provide a way to create a task
-* TODO Provide a command to view a task
+* TODO Provide a command to view notes for a task
+* TODO Command to view all tags
+* TODO Command to list all tasks by tag
+* TODO Search command
 * TODO Write a high level set of tasks that help me do my weekly RTM process
 * TODO Tune the code as a learning exercise. Make as concise, elegant as possible
 * Maybes
-** TODO Provide a way to set up aliases
-So can have short commands all mapped to same
 ** TODO Incorporate into macro??
 ** TODO For example, once have a way to search can save that as an alias
 ** TODO Make the prompt more general - pass in a validation function which is run immediately?
@@ -69,3 +75,4 @@ So can have short commands all mapped to same
 ** TODO Remove all println from the api part
 ** TODO Remove the dependency on the monolithic clojure contrib, if possible
    http://dev.clojure.org/display/doc/Clojure+Contrib
+   
