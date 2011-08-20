@@ -52,7 +52,7 @@ In progress. Need to work out how to display the tasks. Will be same
 as lists basically.
 * TODO Investigate whether can look up functions using ns
 Yes!! (def dl ('display-lists (ns-map 'rtm-clj.core)))
-** TODO Move all commands into a separate namespace and look them up dynamically
+** DONE Move all commands into a separate namespace and look them up dynamically
 Add meta :rtm-aliases ["list" "ls" "l"]
 ** TODO Make sure aliases don't clash
 ** TODO Make the first in the alias list the primary - used for help
