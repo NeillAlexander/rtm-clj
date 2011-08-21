@@ -2664,9 +2664,7 @@ browser. Returns the frob.</p>
   (if-let [frob (rtm-auth-getFrob)]
     (do
       (if-let [url (build-rtm-url {&quot;perms&quot; &quot;delete&quot;, &quot;frob&quot; frob} *auth-url-base*)]
-        (do
-          (println (str &quot;Opening browser at &quot; url))
-          (.browse (java.awt.Desktop/getDesktop) (URI. url))))
+        (.browse (java.awt.Desktop/getDesktop) (URI. url)))
       frob)))</pre></tr><tr><td class="docs"><p>Puts in the call to the api for an auth token, which will be available
 if the user has authorized access
 can do this
@@ -2679,22 +2677,11 @@ if that is truthy, then we're in</p>
   &quot;Checks if the token is still valid. Returns the token if it is valid, otherwise
 returns nil&quot;
   [token]
-  (first (parse-response (call-api &quot;rtm.auth.checkToken&quot; {&quot;auth_token&quot; token}) :token)))</pre></tr><tr><td class="docs"><p>Checks to see if we have a valid token. If not then launches the browser for authorization.
-If a valid token is returned, returns true, otherwise if login failed, returns false</p>
-</td><td class="codes" /><pre class="brush: clojure">(defn login
-  &quot;This is a helper method that pulls the whole auth process together&quot;
-  ([]
-     (login true))
-  ([load-state]
-     (if load-state (load-state!))
-     (if-not (rtm-auth-checkToken (get-token))
-       (if-let [new-token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization)))]
-         (do
-           (set-token! new-token)
-           (save-state)
-           true)
-         false)
-       true)))</pre></tr><tr><td class="docs"><p>Returns the lists for the user as a sequence in the following format:
+  (first (parse-response (call-api &quot;rtm.auth.checkToken&quot; {&quot;auth_token&quot; token}) :token)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn have-valid-token?
+  []
+  (let [token (get-token)]
+    (rtm-auth-checkToken token)))</pre></tr><tr><td class="docs"><p>Returns the lists for the user as a sequence in the following format:
 ({:id "list<em>id" :name "list</em>name"} {:id "another_list" :name "another list name"} etc)</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-lists-getList
   &quot;Returns the lists for the user&quot;
@@ -2721,51 +2708,69 @@ a command, which is then executed. It's essentially a kind of REPL or shell.</p>
             [rtm-clj.api :as api]
             [swank.swank :as swank])
   (:gen-class :main true))</pre></tr><tr><td class="docs"><p>The map that contains all the commands. </p>
-</td><td class="codes" /><pre class="brush: clojure">(def *commands* (atom {}))</pre></tr><tr><td class="docs"><p>This is the cache for the session</p>
+</td><td class="codes" /><pre class="brush: clojure">(def *commands* (atom {}))</pre></tr><tr><td class="docs"><p>And some aliases</p>
+</td><td class="codes" /><pre class="brush: clojure">(def *command-aliases* (atom {}))</pre></tr><tr><td class="docs"><p>This is the cache for the session</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *cache* (atom {}))</pre></tr><tr><td class="docs"><p>utility functions</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmulti as-int class)
 (defmethod as-int Number [v]
   (int v))
 (defmethod as-int String [s]
-  (Integer/parseInt s))</pre></tr><tr><td class="docs"><h1>Commands</h1>
+  (try
+    (Integer/parseInt s)
+    (catch Exception e nil)))
+(defmethod as-int :default [x] nil)</pre></tr><tr><td class="docs"><h1>Commands</h1>
 
 <p>The entry point for putting the commands into the map. This associates a
 Clojure function with a String, which is the command name. When a command
 is executed, the correct function is looked up from here, and all the
 arguments are passed to it.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- duplicate-alias?
+  [al cmd]
+  (if-let [existing (@*command-aliases* al)]
+    (not (= cmd existing))
+    false))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn register-command-alias
+  [al cmd]
+  (if-not (duplicate-alias? al cmd)
+    (swap! *command-aliases* assoc al cmd)))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn register-command
   &quot;Registers the command for future use&quot;
   [f name]
-  (swap! *commands* assoc name f))</pre></tr><tr><td class="docs"><p>Now we have the section of the file which defines the commands. These
+  (swap! *commands* assoc name f)
+  (doseq [also (:also (meta f))]
+    (register-command-alias also name))
+  (if-let [cache-id (:cache-id (meta f))]
+    (register-command-alias cache-id name)))</pre></tr><tr><td class="docs"><p>Now we have the section of the file which defines the commands. These
 are just Clojure functions. However, due to a limitation in the current
 implementation, the commands should only use explict parameters or &amp; args,
-otherwise the arity check will fail. </p>
-</td><td class="codes" /></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn exit
+otherwise the arity check will fail. 
+Note that for the function to be picked up as a command, it must have the
+:cmd metadata, defining the name</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;exit&quot; :also [&quot;quit&quot;]} exit
   &quot;Exits the application&quot;
   []
   (println &quot;Good-bye&quot;)
   (System/exit 1))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(declare lookup-command)</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn help
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;help&quot; :also [&quot;?&quot;, &quot;h&quot;]} help
   &quot;Displays all the available commands, or provides help for a particular command&quot;
   ([]
      (apply println (sort (keys @*commands*))))
   ([cmd]
      (if-let [f (lookup-command cmd)]
-       (println (str cmd &quot;: &quot; (:doc (meta f))))
+       (println (str cmd &quot; &quot;(:also (meta f)) &quot;: &quot; (:doc (meta f))))
        (println (str cmd &quot;: command not found&quot;)))))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn start-swank
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;swank&quot; :also [&quot;repl&quot;]} start-swank
   &quot;Start a swank server on the specified port. Defaults to 4005.&quot;
   ([]
      (swank/start-repl 4005))
   ([port]
      (swank/start-repl (as-int port))))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn echo
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;echo&quot; :also [&quot;say&quot;]} echo
   &quot;Echos out the command: echo [text]&quot;
   [&amp; args]
   (apply println args))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn state
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;state&quot;} state
   &quot;Echos out the current state&quot;
   []
   (println (api/get-state)))</pre></tr><tr><td class="docs"><p>This is the key part of the app. Display a set of values that the user
@@ -2795,48 +2800,75 @@ That is the mechanism for storing data in the session.</p>
   (if (not (zero? (count id-map)))
     (do
       (cache-put cache-id id-map)
+      (cache-put :last cache-id)
       (title heading)
       (doseq [item id-map]
         (println (str (key item) &quot; - &quot; (:name (val item)))))
       (divider)
       (println))
-    (println &quot;None&quot;)))</pre></tr><tr><td class="docs"><p>Not only displays the lists, but also stores them away for reference, so user can do
+    (println &quot;None&quot;)))</pre></tr><tr><td class="docs"><p>used twice, so factored out</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- indexify
+  &quot;Creates a map using the supplied collection, where each key is a number starting at zero&quot;
+  [c]
+  (apply array-map (interleave (iterate inc 1) c)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- create-id-map
+  &quot;Creates the map that is used to output the lists, tasks etc&quot;
+  [items]
+  (for [item items :let [id-map {:id (:id item), :name (:name item)}]]
+    id-map))</pre></tr><tr><td class="docs"><p>Not only displays the lists, but also stores them away for reference, so user can do
 list 0
 to display all the tasks in list 0</p>
-</td><td class="codes" /><pre class="brush: clojure">(defn display-lists
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;list&quot;, :also [&quot;ls&quot; &quot;l&quot;], :cache-id :lists} display-lists
   &quot;Displays all the lists or all the tasks for the selected list&quot;
   ([]
      (if-let [lists (api/rtm-lists-getList)]
-       ;; create the correct map format for display
        (display-and-cache
-        (apply array-map (interleave (iterate inc 0) (for [l lists :let [lm {:id (:id l), :name (:name l)}]] lm)))
-        :lists ;; the key for the cache
-        &quot;Lists&quot;))) ;; the title
+        (indexify (create-id-map lists))
+        :lists
+        &quot;Lists&quot;)))
   ([i]
      (let [idx (as-int i)]
        (if-let [cached-lists (cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
            (if-let [tasks (flatten (api/rtm-tasks-getList (:id the-list)))]
              (display-and-cache
-              (apply array-map (interleave (iterate inc 0) (for [t tasks :let [lm {:id (:id t), :name (:name t)}]] lm)))
-              :tasks ;; the key for the cache
-              (str &quot;List: &quot; (:name the-list)))))))))</pre></tr><tr><td class="docs"><p>At some point I think I will replace these separate defn and register-command
-calls with a macro that combines them all.</p>
-</td><td class="codes" /><pre class="brush: clojure">(register-command help &quot;help&quot;)
-(register-command exit &quot;exit&quot;)
-(register-command echo &quot;echo&quot;)
-(register-command state &quot;state&quot;)
-(register-command display-lists &quot;list&quot;)
-(register-command start-swank &quot;swank&quot;)</pre></tr><tr><td class="docs"><h1>Dispatching Commands</h1>
+              (indexify (create-id-map tasks))
+              :tasks
+              (str &quot;List: &quot; (:name the-list)))))))))</pre></tr><tr><td class="docs"><p>Command for viewing a particular task</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;task&quot;, :also [&quot;t&quot;], :cache-id :tasks} view-task
+  &quot;Displays the details of a particular task from the last displayed list.&quot;
+  [i]
+  (if-let [task ((cache-get :tasks) (as-int i))]
+    (println (str &quot;Ready to fetch task: &quot; (:id task) &quot; - &quot; (:name task)))))</pre></tr><tr><td class="docs"><h1>Dispatching Commands</h1>
 
 <p>This section of the code is the part that parses the input from the user, and
 works out which command to execute.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- lookup-alias
+  [cmd]
+  (if (@*command-aliases* cmd)
+    (@*command-aliases* cmd)
+    cmd))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- command-exists?
+  [cmd]
+  (if (@*commands* cmd) true false))</pre></tr><tr><td class="docs"><p>Supports looking at the menu and typing a number for the
+displayed menu</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- lookup-index-command [i]
+  &quot;Used to directly execute an item from the displayed index.&quot;
+  (if-let [last-id (cache-get :last)]
+    (if-let [f (lookup-command last-id)]
+      ;; construct a function that takes no args, and pass it the index
+      (with-meta
+        (fn [] (f i)) {:arglists '([])}))))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn lookup-command 
-  &quot;Parses the command string returning a function to be executed&quot;
-  [cmd &amp; args]
-  (@*commands* cmd))</pre></tr><tr><td class="docs"><p>This function displays the prompt, reads input, and returns the full line
+  &quot;Looks up the command by name, also checking for aliases. Returns the function.&quot;
+  [cmd]
+  (let [cmd-name (lookup-alias cmd)]
+    (if (command-exists? cmd-name)
+      (@*commands* cmd-name)
+      (if-let [i (as-int cmd)]
+          (lookup-index-command i)))))</pre></tr><tr><td class="docs"><p>This function displays the prompt, reads input, and returns the full line
 as a String. Note that it is parameterized so that it can be used to request
-specific input from the user.
+specific input from the user
 It would probably be useful to add a validation function in here as well to
 make it more general.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn prompt!
@@ -2845,11 +2877,13 @@ of the individual words that were entered.&quot;
   ([]
      (prompt! &quot;rtm&gt; &quot;))
   ([s]
+     (prompt! s str/blank?))
+  ([s vf]
      (print s)
      (flush)
      (let [line (read-line)]
-       (if (str/blank? line)
-         (recur s)
+       (if (vf line)
+         (recur s vf)
          line))))</pre></tr><tr><td class="docs"><p>I love this bit of code. There's probably an easier way to do it, but then
 I didn't have much experience of Clojure when I wrote it. This takes a single
 arglist for a function (i.e. the bit in square brackets, as defined in defn),
@@ -2919,20 +2953,45 @@ delegate to the call-cmd&quot;
   &quot;This is repl, if you like, for rtm. Read a command, evaluate it, print the result, loop&quot;
   []
   (call (prompt!))
-  (recur))</pre></tr><tr><td class="docs"><h1>Main Control Loop</h1>
+  (recur))</pre></tr><tr><td class="docs"><p>Dynamically discover commands</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- discover-commands
+  []
+  (doseq [f (vals (ns-publics 'rtm-clj.core)) :when (:cmd (meta f)) :let [name (:cmd (meta f))]]
+    (register-command f name)))</pre></tr><tr><td class="docs"><p>Checks to see if we have a valid token. If not then launches the browser for authorization.
+If a valid token is returned, returns true, otherwise if login failed, returns false</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- login
+  &quot;This is a helper method that pulls the whole auth process together&quot;
+  ([]
+     (login true))
+  ([load-state]
+     (if load-state (api/load-state!)) ;; only load the state if it was requested
+     (if-not (api/have-valid-token?)
+       (if-let [frob (api/request-authorization)]
+         (do
+           (prompt! &quot;Authorise application in broswer and &lt;RETURN&gt; to continue...&quot;
+                    (fn [x] nil))
+           (if-let [new-token (api/rtm-auth-getToken frob)]
+             (if-let [valid-token (api/rtm-auth-checkToken new-token)]
+               (do
+                 (api/set-token! valid-token)
+                 (api/save-state)
+                 true)
+               false))))
+       true)))</pre></tr><tr><td class="docs"><h1>Main Control Loop</h1>
 
 <p>The main method, the entry point for running from Java.
 It tries to load a previous state from the file in the home directory, to
 retrieve the api key and shared secret, which are needed to interact with
 the Remember the Milk API. Once it is all set up, it just calls the cmd-loop.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn -main [&amp; args]
+  (discover-commands)
   (if-not (api/load-state!)
     (let [api-key (prompt! &quot;Enter api key: &quot;)
           secret (prompt! &quot;Enter shared secret: &quot;)]
       (api/set-api-key! api-key)
       (api/set-shared-secret! secret)
       (api/save-state)))
-  (if (api/login)
+  (if (login)
     (cmd-loop)
     (do
       (println &quot;Login failed&quot;)
