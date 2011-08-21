@@ -65,6 +65,8 @@ Store as last, change the key to be the function name?
 * TODO Provide a way to create a task
 * TODO Provide a command to view notes for a task
 * TODO Command to move a task to another list
+* TODO Rename a task
+* TODO Change due date on a task
 * TODO Ability to sort a list by priority, due date
 * TODO Command to view all tags
 * TODO Command to list all tasks by tag

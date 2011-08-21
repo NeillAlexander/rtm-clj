@@ -21,7 +21,10 @@
 (defmethod as-int Number [v]
   (int v))
 (defmethod as-int String [s]
-  (Integer/parseInt s))
+  (try
+    (Integer/parseInt s)
+    (catch Exception e nil)))
+(defmethod as-int :default [x] nil)
 
 ;; # Commands
 ;; The entry point for putting the commands into the map. This associates a
@@ -44,7 +47,9 @@
   [f name]
   (swap! *commands* assoc name f)
   (doseq [also (:also (meta f))]
-    (register-command-alias also name)))
+    (register-command-alias also name))
+  (if-let [cache-id (:cache-id (meta f))]
+    (register-command-alias cache-id name)))
 
 ;; Now we have the section of the file which defines the commands. These
 ;; are just Clojure functions. However, due to a limitation in the current
@@ -118,6 +123,7 @@
   (if (not (zero? (count id-map)))
     (do
       (cache-put cache-id id-map)
+      (cache-put :last cache-id)
       (title heading)
       (doseq [item id-map]
         (println (str (key item) " - " (:name (val item)))))
@@ -140,7 +146,7 @@
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
-(defn ^{:cmd "list", :also ["ls" "l"]} display-lists
+(defn ^{:cmd "list", :also ["ls" "l"], :cache-id :lists} display-lists
   "Displays all the lists or all the tasks for the selected list"
   ([]
      (if-let [lists (api/rtm-lists-getList)]
@@ -167,15 +173,32 @@
     (@*command-aliases* cmd)
     cmd))
 
+(defn- command-exists?
+  [cmd]
+  (if (@*commands* cmd) true false))
+
+;; Supports looking at the menu and typing a number for the
+;; displayed menu
+(defn- lookup-index-command [i]
+  "Used to directly execute an item from the displayed index."
+  (if-let [last-id (cache-get :last)]
+    (if-let [f (lookup-command last-id)]
+      ;; construct a function that takes no args, and pass it the index
+      (with-meta
+        (fn [] (f i)) {:arglists '([])}))))
+
 (defn lookup-command 
-  "Looks up the command by name, also checking for aliases"
+  "Looks up the command by name, also checking for aliases. Returns the function."
   [cmd]
   (let [cmd-name (lookup-alias cmd)]
-    (@*commands* cmd-name)))
+    (if (command-exists? cmd-name)
+      (@*commands* cmd-name)
+      (if-let [i (as-int cmd)]
+          (lookup-index-command i)))))
 
 ;; This function displays the prompt, reads input, and returns the full line
 ;; as a String. Note that it is parameterized so that it can be used to request
-;; specific input from the user.
+;; specific input from the user
 ;; It would probably be useful to add a validation function in here as well to
 ;; make it more general.
 (defn prompt!
