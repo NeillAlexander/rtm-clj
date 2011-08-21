@@ -50,6 +50,11 @@ Not needed
 * DONE Add arg which displays all tasks in a list
 In progress. Need to work out how to display the tasks. Will be same
 as lists basically.
+* DONE Need to fix the login process
+When I started up the app on my laptop, it prompted for the shared
+secret etc, redirected to the browser, but then displayed login
+failed. So something isn't working when it comes to retrieving the
+token. Now seems like a good time to fix that!
 * TODO Investigate whether can look up functions using ns
 Yes!! (def dl ('display-lists (ns-map 'rtm-clj.core)))
 ** DONE Move all commands into a separate namespace and look them up dynamically
@@ -62,6 +67,7 @@ Add meta :rtm-aliases ["list" "ls" "l"]
 * TODO Provide a way to delete a task
 * TODO Provide a way to create a task
 * TODO Provide a command to view notes for a task
+* TODO Ability to sort a list by priority, due date
 * TODO Command to view all tags
 * TODO Command to list all tasks by tag
 * TODO Search command

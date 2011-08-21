@@ -161,11 +161,13 @@ of the individual words that were entered."
   ([]
      (prompt! "rtm> "))
   ([s]
+     (prompt! s str/blank?))
+  ([s vf]
      (print s)
      (flush)
      (let [line (read-line)]
-       (if (str/blank? line)
-         (recur s)
+       (if (vf line)
+         (recur s vf)
          line))))
 
 
@@ -252,6 +254,28 @@ delegate to the call-cmd"
   (doseq [f (vals (ns-publics 'rtm-clj.core)) :when (:cmd (meta f)) :let [name (:cmd (meta f))]]
     (register-command f name)))
 
+;; Checks to see if we have a valid token. If not then launches the browser for authorization.
+;; If a valid token is returned, returns true, otherwise if login failed, returns false
+(defn- login
+  "This is a helper method that pulls the whole auth process together"
+  ([]
+     (login true))
+  ([load-state]
+     (if load-state (api/load-state!)) ;; only load the state if it was requested
+     (if-not (api/have-valid-token?)
+       (if-let [frob (api/request-authorization)]
+         (do
+           (prompt! "Authorise application in broswer and <RETURN> to continue..."
+                    (fn [x] nil))
+           (if-let [new-token (api/rtm-auth-getToken frob)]
+             (if-let [valid-token (api/rtm-auth-checkToken new-token)]
+               (do
+                 (api/set-token! valid-token)
+                 (api/save-state)
+                 true)
+               false))))
+       true)))
+
 ;; # Main Control Loop
 ;; The main method, the entry point for running from Java.
 ;; It tries to load a previous state from the file in the home directory, to
@@ -265,7 +289,7 @@ delegate to the call-cmd"
       (api/set-api-key! api-key)
       (api/set-shared-secret! secret)
       (api/save-state)))
-  (if (api/login)
+  (if (login)
     (cmd-loop)
     (do
       (println "Login failed")

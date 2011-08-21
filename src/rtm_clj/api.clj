@@ -176,9 +176,7 @@
   (if-let [frob (rtm-auth-getFrob)]
     (do
       (if-let [url (build-rtm-url {"perms" "delete", "frob" frob} *auth-url-base*)]
-        (do
-          (println (str "Opening browser at " url))
-          (.browse (java.awt.Desktop/getDesktop) (URI. url))))
+        (.browse (java.awt.Desktop/getDesktop) (URI. url)))
       frob)))
 
 ;; Puts in the call to the api for an auth token, which will be available
@@ -197,22 +195,11 @@ returns nil"
   [token]
   (first (parse-response (call-api "rtm.auth.checkToken" {"auth_token" token}) :token)))
 
-;; Checks to see if we have a valid token. If not then launches the browser for authorization.
-;; If a valid token is returned, returns true, otherwise if login failed, returns false
-(defn login
-  "This is a helper method that pulls the whole auth process together"
-  ([]
-     (login true))
-  ([load-state]
-     (if load-state (load-state!))
-     (if-not (rtm-auth-checkToken (get-token))
-       (if-let [new-token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization)))]
-         (do
-           (set-token! new-token)
-           (save-state)
-           true)
-         false)
-       true)))
+(defn have-valid-token?
+  []
+  (let [token (get-token)]
+    (rtm-auth-checkToken token)))
+
 
 ;; Returns the lists for the user as a sequence in the following format:
 ;; ({:id "list_id" :name "list_name"} {:id "another_list" :name "another list name"} etc)
