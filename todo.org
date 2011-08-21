@@ -50,14 +50,14 @@ When I started up the app on my laptop, it prompted for the shared
 secret etc, redirected to the browser, but then displayed login
 failed. So something isn't working when it comes to retrieving the
 token. Now seems like a good time to fix that!
-* TODO Investigate whether can look up functions using ns
+* DONE Investigate whether can look up functions using ns
 Yes!! (def dl ('display-lists (ns-map 'rtm-clj.core)))
 ** DONE Move all commands into a separate namespace and look them up dynamically
 Add meta :rtm-aliases ["list" "ls" "l"]
 ** DONE Make sure aliases don't clash
 ** DONE Make the first in the alias list the primary - used for help
-** TODO Display the aliases in help also
-** TODO Make sure arity checks still work
+** DONE Make sure arity checks still work
+** DONE Display the aliases in help also
 * TODO Number shortcut - remember the context and call the function with the number
 Store as last, change the key to be the function name? 
 * TODO Provide a way to mark a task as complete

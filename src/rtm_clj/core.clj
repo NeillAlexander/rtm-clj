@@ -66,7 +66,7 @@
      (apply println (sort (keys @*commands*))))
   ([cmd]
      (if-let [f (lookup-command cmd)]
-       (println (str cmd ": " (:doc (meta f))))
+       (println (str cmd " "(:also (meta f)) ": " (:doc (meta f))))
        (println (str cmd ": command not found")))))
 
 (defn ^{:cmd "swank" :also ["repl"]} start-swank
