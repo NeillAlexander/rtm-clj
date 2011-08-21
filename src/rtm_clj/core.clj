@@ -10,6 +10,9 @@
 ;; The map that contains all the commands. 
 (def *commands* (atom {}))
 
+;; And some aliases
+(def *command-aliases* (atom {}))
+
 ;; This is the cache for the session
 (def *cache* (atom {}))
 
@@ -25,10 +28,23 @@
 ;; Clojure function with a String, which is the command name. When a command
 ;; is executed, the correct function is looked up from here, and all the
 ;; arguments are passed to it.
+(defn- duplicate-alias?
+  [al cmd]
+  (if-let [existing (@*command-aliases* al)]
+    (not (= cmd existing))
+    false))
+
+(defn register-command-alias
+  [al cmd]
+  (if-not (duplicate-alias? al cmd)
+    (swap! *command-aliases* assoc al cmd)))
+
 (defn register-command
   "Registers the command for future use"
   [f name]
-  (swap! *commands* assoc name f))
+  (swap! *commands* assoc name f)
+  (doseq [also (:also (meta f))]
+    (register-command-alias also name)))
 
 ;; Now we have the section of the file which defines the commands. These
 ;; are just Clojure functions. However, due to a limitation in the current
@@ -36,7 +52,7 @@
 ;; otherwise the arity check will fail. 
 ;; Note that for the function to be picked up as a command, it must have the
 ;; :cmd metadata, defining the name
-(defn ^{:cmd "exit"} exit
+(defn ^{:cmd "exit" :also ["quit"]} exit
   "Exits the application"
   []
   (println "Good-bye")
@@ -44,7 +60,7 @@
 
 (declare lookup-command)
 
-(defn ^{:cmd "help"} help
+(defn ^{:cmd "help" :also ["?", "h"]} help
   "Displays all the available commands, or provides help for a particular command"
   ([]
      (apply println (sort (keys @*commands*))))
@@ -53,14 +69,14 @@
        (println (str cmd ": " (:doc (meta f))))
        (println (str cmd ": command not found")))))
 
-(defn ^{:cmd "swank"} start-swank
+(defn ^{:cmd "swank" :also ["repl"]} start-swank
   "Start a swank server on the specified port. Defaults to 4005."
   ([]
      (swank/start-repl 4005))
   ([port]
      (swank/start-repl (as-int port))))
 
-(defn ^{:cmd "echo"} echo
+(defn ^{:cmd "echo" :also ["say"]} echo
   "Echos out the command: echo [text]"
   [& args]
   (apply println args))
@@ -124,7 +140,7 @@
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
-(defn ^{:cmd "list"} display-lists
+(defn ^{:cmd "list", :also ["ls" "l"]} display-lists
   "Displays all the lists or all the tasks for the selected list"
   ([]
      (if-let [lists (api/rtm-lists-getList)]
@@ -145,10 +161,17 @@
 ;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and
 ;; works out which command to execute.
+(defn- lookup-alias
+  [cmd]
+  (if (@*command-aliases* cmd)
+    (@*command-aliases* cmd)
+    cmd))
+
 (defn lookup-command 
-  "Parses the command string returning a function to be executed"
-  [cmd & args]
-  (@*commands* cmd))
+  "Looks up the command by name, also checking for aliases"
+  [cmd]
+  (let [cmd-name (lookup-alias cmd)]
+    (@*commands* cmd-name)))
 
 ;; This function displays the prompt, reads input, and returns the full line
 ;; as a String. Note that it is parameterized so that it can be used to request
