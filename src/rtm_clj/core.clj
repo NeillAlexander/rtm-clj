@@ -135,7 +135,7 @@
 (defn- indexify
   "Creates a map using the supplied collection, where each key is a number starting at zero"
   [c]
-  (apply array-map (interleave (iterate inc 0) c)))
+  (apply array-map (interleave (iterate inc 1) c)))
 
 (defn- create-id-map
   "Creates the map that is used to output the lists, tasks etc"
@@ -163,6 +163,13 @@
               (indexify (create-id-map tasks))
               :tasks
               (str "List: " (:name the-list)))))))))
+
+;; Command for viewing a particular task
+(defn ^{:cmd "task", :also ["t"], :cache-id :tasks} view-task
+  "Displays the details of a particular task from the last displayed list."
+  [i]
+  (if-let [task ((cache-get :tasks) (as-int i))]
+    (println (str "Ready to fetch task: " (:id task) " - " (:name task)))))
 
 ;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and

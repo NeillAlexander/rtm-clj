@@ -58,12 +58,15 @@ Add meta :rtm-aliases ["list" "ls" "l"]
 ** DONE Make the first in the alias list the primary - used for help
 ** DONE Make sure arity checks still work
 ** DONE Display the aliases in help also
-* TODO Number shortcut - remember the context and call the function with the number
+* DONE Number shortcut - remember the context and call the function with the number
 Store as last, change the key to be the function name? 
+* TODO Provide a command to view a task
+** DONE Hook into index command
+** TODO Add the api call to retrieve the command based on the id
+** TODO Display the task data once retrieved from api
 * TODO Provide a way to mark a task as complete
 * TODO Provide a way to delete a task
 * TODO Provide a way to create a task
-* TODO Provide a command to view notes for a task
 * TODO Command to move a task to another list
 * TODO Rename a task
 * TODO Change due date on a task
