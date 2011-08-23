@@ -60,14 +60,15 @@ Add meta :rtm-aliases ["list" "ls" "l"]
 ** DONE Display the aliases in help also
 * DONE Number shortcut - remember the context and call the function with the number
 Store as last, change the key to be the function name? 
-* TODO Provide a command to view a task
+* DONE Provide a command to view a task
 ** DONE Hook into index command
-** TODO Add the api call to retrieve the command based on the id
-** TODO Display the task data once retrieved from api
+** DONE Add the api call to retrieve the command based on the id
+** DONE Display the task data once retrieved from api
 * TODO Provide a way to mark a task as complete
 * TODO Provide a way to delete a task
 * TODO Provide a way to create a task
 * TODO Command to move a task to another list
+** TODO Need to provide move by name, as well as by id
 * TODO Rename a task
 * TODO Change due date on a task
 * TODO Ability to sort a list by priority, due date

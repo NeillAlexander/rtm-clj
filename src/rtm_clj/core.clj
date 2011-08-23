@@ -140,7 +140,7 @@
 (defn- create-id-map
   "Creates the map that is used to output the lists, tasks etc"
   [items]
-  (for [item items :let [id-map {:id (:id item), :name (:name item)}]]
+  (for [item items :let [id-map {:id (:id item), :name (:name item), :data item}]]
     id-map))
 
 ;; Not only displays the lists, but also stores them away for reference, so user can do
@@ -169,7 +169,16 @@
   "Displays the details of a particular task from the last displayed list."
   [i]
   (if-let [task ((cache-get :tasks) (as-int i))]
-    (println (str "Ready to fetch task: " (:id task) " - " (:name task)))))
+    (let [task-data (:data task)]
+      (cache-put :last-task task-data)
+      (title (str "Task: " (:name task-data)))
+      (println (str "Created: " (:created task-data)))
+      (println (str "Due: " (:due task-data)))
+      (println (str "URL: " (:url task-data)))
+      (doseq [note (flatten (:notes task-data))]
+        (println (str "Note: " (:title note))))
+      (divider)
+      (println))))
 
 ;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and

@@ -210,6 +210,13 @@ returns nil"
     (for [x (xml-seq list-xml) :when (= :list (:tag x))]
       (:attrs x))))
 
+(defn- extract-notes
+  "Returns the notes data from the task series xml"
+  [task-series]
+  (for [notes (:content task-series) :when (= :notes (:tag notes))]
+    (for [note (:content notes) :when (= :note (:tag note))]
+      (:attrs note))))
+
 ;; Returns all the tasks, or the tasks for a particular list. Supports the RTM
 ;; search filters. By default it uses status:incomplete to only return incomplete
 ;; tasks
@@ -222,4 +229,4 @@ returns nil"
      (if-let [xml (to-xml (call-api "rtm.tasks.getList" {"auth_token" (get-token), "list_id" list-id, "filter" list-filter}))]
        (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
          (for [task (:content task-series) :when (= :task (:tag task))]
-           (assoc (:attrs task-series) :due (:due (:attrs task))))))))
+           (assoc (:attrs task-series) :due (:due (:attrs task)) :notes (extract-notes task-series)))))))
