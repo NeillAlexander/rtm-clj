@@ -64,9 +64,14 @@ Store as last, change the key to be the function name?
 ** DONE Hook into index command
 ** DONE Add the api call to retrieve the command based on the id
 ** DONE Display the task data once retrieved from api
-* TODO Provide a way to mark a task as complete
-* TODO Provide a way to delete a task
 * TODO Provide a way to create a task
+** TODO Support the shortcuts that the web app supports?
+^today !1 etc
+* TODO Provide a way to delete a task
+* TODO Provide a way to mark a task as complete
+c 1 2 3
+Marks tasks 1, 2, and 3 as complete
+Add a "Marking as complete - are you sure" prompt
 * TODO Command to move a task to another list
 ** TODO Need to provide move by name, as well as by id
 * TODO Rename a task
