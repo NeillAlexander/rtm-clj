@@ -2536,21 +2536,28 @@ The API is REST based, so it uses clj-http.</p>
   (:import
    [java.security MessageDigest]
    [java.io ByteArrayInputStream]
-   [java.net URI]))</pre></tr><tr><td class="docs"><h1>Constants</h1>
+   [java.net URI URLEncoder]))</pre></tr><tr><td class="docs"><h1>Constants</h1>
 </td><td class="codes" /><pre class="brush: clojure">(def *api-url* &quot;http://api.rememberthemilk.com/services/rest/?&quot;)
 (def *auth-url-base* &quot;http://www.rememberthemilk.com/services/auth/?&quot;)</pre></tr><tr><td class="docs"><p>At some point I may make this configurable. This is where the
 state is stored.</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *state-file* (str (System/getenv &quot;HOME&quot;) &quot;/.rtm-clj&quot;))</pre></tr><tr><td class="docs"><h1>State</h1>
-</td><td class="codes" /></tr><tr><td class="docs"><p>These are the 2 things needed to authenticate with RTM.</p>
+</td><td class="codes" /></tr><tr><td class="docs"><p>These are the 3 things needed to authenticate with RTM.</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *api-key* (atom ))
 (def *shared-secret* (atom ))
-(def *token* (atom nil))</pre></tr><tr><td class="docs"><p>Helper functions to store the state away in the atoms.</p>
+(def *token* (atom nil))</pre></tr><tr><td class="docs"><p>Session specific</p>
+</td><td class="codes" /><pre class="brush: clojure">(def *timeline* (atom nil))</pre></tr><tr><td class="docs"><p>Helper functions to store the state away in the atoms.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn get-token
   []
   @*token*)</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn set-token!
   [token]
-  (reset! *token* token))</pre></tr><tr><td class="docs">
+  (reset! *token* token))</pre></tr><tr><td class="docs"><p>Creates a new timeline if necessary, and caches it</p>
+</td><td class="codes" /><pre class="brush: clojure">(declare rtm-timelines-create)</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- get-timeline
+  []
+  (if-not @*timeline*
+    (reset! *timeline* (rtm-timelines-create)))
+  @*timeline*)</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn set-api-key!
   &quot;Sets the key for the session&quot;
   [key]
@@ -2588,12 +2595,12 @@ the current state.</p>
          nil))))</pre></tr><tr><td class="docs"><h1>URL Building</h1>
 </td><td class="codes" /></tr><tr><td class="docs"><p>Accepts a map, and converts it into key value pairs for the url</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- build-params
-  &quot;Builds key=value&amp;key=value&amp;key=value to append onto url&quot;
-  ([param-map]
-     (build-params param-map &quot;=&quot; &quot;&amp;&quot;))
-  ;; this is used when signing parameters, when the = and &amp; is stripped out.
-  ([param-map key-val-separator param-separator]
-     (apply str (drop-last (interleave (map #(str (first %) key-val-separator (second %)) param-map) (repeat param-separator))))))</pre></tr><tr><td class="docs">
+  ([request-params]
+     (build-params request-params &quot;=&quot; &quot;&amp;&quot; true))
+  ([request-params key-val-separator param-separator encode?]
+     (let [encode (if (true? encode?) #(URLEncoder/encode (str %) &quot;UTF-8&quot;) #(str %))
+           coded (for [[n v] request-params] (str (encode n) key-val-separator (encode v)))]
+       (apply str (interpose param-separator coded)))))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn- md5sum
   [s]
   (.toString (BigInteger. 1 (.digest (MessageDigest/getInstance &quot;MD5&quot;) (.getBytes s))) 16))</pre></tr><tr><td class="docs"><p>Building up the vocabulary...</p>
@@ -2609,7 +2616,7 @@ documentation.</p>
   [param-map]
   (if (shared-secret-set?)
     (let [sorted-map (sort param-map)]
-      (md5sum (str @*shared-secret* (build-params sorted-map  ))))))</pre></tr><tr><td class="docs"><p>Builds the url, with the api and signature parameters correctly applied.</p>
+      (md5sum (str @*shared-secret* (build-params sorted-map   false))))))</pre></tr><tr><td class="docs"><p>Builds the url, with the api and signature parameters correctly applied.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn build-rtm-url
   &quot;Builds the url to hit the rest service&quot;
   ([param-map]
@@ -2626,7 +2633,12 @@ The param-map contains the key/value pairs for the http request params.</p>
     (let [param-map-with-method (assoc param-map &quot;method&quot; method)
           url (str (build-rtm-url param-map-with-method))]
       (:body (http/get url)))
-    (println &quot;Shared secret and / or api key not set&quot;)))</pre></tr><tr><td class="docs"><p>The responses that come back from RTM are xml. This converts into an
+    (println &quot;Shared secret and / or api key not set&quot;)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- call-api-with-token
+  ([method]
+     (call-api-with-token method {}))
+  ([method param-map]
+     (call-api method (assoc param-map &quot;auth_token&quot; (get-token)))))</pre></tr><tr><td class="docs"><p>The responses that come back from RTM are xml. This converts into an
 xml structure so that we can parse it.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- to-xml
   &quot;Convert the string to xml&quot;
@@ -2686,9 +2698,20 @@ returns nil&quot;
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-lists-getList
   &quot;Returns the lists for the user&quot;
   []
-  (if-let [list-xml (to-xml (call-api &quot;rtm.lists.getList&quot; {&quot;auth_token&quot; (get-token)}))]
+  (if-let [list-xml (to-xml (call-api-with-token &quot;rtm.lists.getList&quot;))]
     (for [x (xml-seq list-xml) :when (= :list (:tag x))]
-      (:attrs x))))</pre></tr><tr><td class="docs"><p>Returns all the tasks, or the tasks for a particular list. Supports the RTM
+      (:attrs x))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- extract-notes
+  &quot;Returns the notes data from the task series xml&quot;
+  [task-series]
+  (for [notes (:content task-series) :when (= :notes (:tag notes))]
+    (for [note (:content notes) :when (= :note (:tag note))]
+      (:attrs note))))</pre></tr><tr><td class="docs"><p>Parses any response that rturns a task series</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- parse-task-series-response
+  [xml]
+  (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
+    (for [task (:content task-series) :when (= :task (:tag task))]
+      (assoc (:attrs task-series) :due (:due (:attrs task)) :notes (extract-notes task-series)))))</pre></tr><tr><td class="docs"><p>Returns all the tasks, or the tasks for a particular list. Supports the RTM
 search filters. By default it uses status:incomplete to only return incomplete
 tasks
 NB: it only returns a sub-set of the data currently. I may add more in as I go along...</p>
@@ -2697,10 +2720,16 @@ NB: it only returns a sub-set of the data currently. I may add more in as I go a
   ([list-id]
      (rtm-tasks-getList list-id &quot;status:incomplete&quot;))
   ([list-id list-filter]
-     (if-let [xml (to-xml (call-api &quot;rtm.tasks.getList&quot; {&quot;auth_token&quot; (get-token), &quot;list_id&quot; list-id, &quot;filter&quot; list-filter}))]
-       (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
-         (for [task (:content task-series) :when (= :task (:tag task))]
-           (assoc (:attrs task-series) :due (:due (:attrs task))))))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
+     (if-let [xml (to-xml (call-api-with-token &quot;rtm.tasks.getList&quot; {&quot;list_id&quot; list-id, &quot;filter&quot; list-filter}))]
+       (parse-task-series-response xml))))</pre></tr><tr><td class="docs"><p>Timeline is required for any write tasks</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-timelines-create
+  []
+  (first (parse-response (call-api-with-token &quot;rtm.timelines.create&quot;) :timeline)))</pre></tr><tr><td class="docs"><p>Add a task</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-add
+  &quot;Create and add a new task using smart add. The task is added to the inbox.&quot;
+  [name]
+  (if-let [xml (to-xml (call-api-with-token &quot;rtm.tasks.add&quot; {&quot;timeline&quot; (get-timeline), &quot;parse&quot; &quot;1&quot;, &quot;name&quot; name}))]
+    (parse-task-series-response xml)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
 command line application. The idea is that it displays a prompt, you enter
 a command, which is then executed. It's essentially a kind of REPL or shell.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.core
@@ -2814,7 +2843,7 @@ That is the mechanism for storing data in the session.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- create-id-map
   &quot;Creates the map that is used to output the lists, tasks etc&quot;
   [items]
-  (for [item items :let [id-map {:id (:id item), :name (:name item)}]]
+  (for [item items :let [id-map {:id (:id item), :name (:name item), :data item}]]
     id-map))</pre></tr><tr><td class="docs"><p>Not only displays the lists, but also stores them away for reference, so user can do
 list 0
 to display all the tasks in list 0</p>
@@ -2834,12 +2863,30 @@ to display all the tasks in list 0</p>
              (display-and-cache
               (indexify (create-id-map tasks))
               :tasks
-              (str &quot;List: &quot; (:name the-list)))))))))</pre></tr><tr><td class="docs"><p>Command for viewing a particular task</p>
+              (str &quot;List: &quot; (:name the-list)))))))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- display-task
+  [task-data]
+  (title (str &quot;Task: &quot; (:name task-data)))
+  (println (str &quot;Created: &quot; (:created task-data)))
+  (println (str &quot;Due: &quot; (:due task-data)))
+  (println (str &quot;URL: &quot; (:url task-data)))
+  (doseq [note (flatten (:notes task-data))]
+    (println (str &quot;Note: &quot; (:title note))))
+  (divider)
+  (println))</pre></tr><tr><td class="docs"><p>Command for viewing a particular task</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;task&quot;, :also [&quot;t&quot;], :cache-id :tasks} view-task
   &quot;Displays the details of a particular task from the last displayed list.&quot;
   [i]
   (if-let [task ((cache-get :tasks) (as-int i))]
-    (println (str &quot;Ready to fetch task: &quot; (:id task) &quot; - &quot; (:name task)))))</pre></tr><tr><td class="docs"><h1>Dispatching Commands</h1>
+    (let [task-data (:data task)]
+      (cache-put :last-task task-data)
+      (display-task task-data))))</pre></tr><tr><td class="docs"><p>Command for adding a task</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;new&quot;, :also [&quot;add&quot;]} add-task
+  &quot;Creates a new task using smart-add&quot;
+  [&amp; args]
+  (if-let [new-task (api/rtm-tasks-add (str/join &quot; &quot; args))]
+    (display-task (first (flatten new-task)))
+    (println &quot;Failed to add task&quot;)))</pre></tr><tr><td class="docs"><h1>Dispatching Commands</h1>
 
 <p>This section of the code is the part that parses the input from the user, and
 works out which command to execute.</p>
@@ -2972,7 +3019,7 @@ If a valid token is returned, returns true, otherwise if login failed, returns f
                     (fn [x] nil))
            (if-let [new-token (api/rtm-auth-getToken frob)]
              (if-let [valid-token (api/rtm-auth-checkToken new-token)]
-               (do
+               (do                 
                  (api/set-token! valid-token)
                  (api/save-state)
                  true)
