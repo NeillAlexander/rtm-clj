@@ -64,9 +64,11 @@ Store as last, change the key to be the function name?
 ** DONE Hook into index command
 ** DONE Add the api call to retrieve the command based on the id
 ** DONE Display the task data once retrieved from api
-* TODO Provide a way to create a task
-** TODO Support the shortcuts that the web app supports?
-^today !1 etc
+* DONE Provide a way to create a task
+** DONE Add api support for time line
+** DONE Request a timeline on login
+** DONE Support the shortcuts that the web app supports?
+^today !1 etc - just set parse to 1
 * TODO Provide a way to delete a task
 * TODO Provide a way to mark a task as complete
 c 1 2 3
@@ -76,13 +78,15 @@ Add a "Marking as complete - are you sure" prompt
 ** TODO Need to provide move by name, as well as by id
 * TODO Rename a task
 * TODO Change due date on a task
+* TODO Change priority on a task
 * TODO Ability to sort a list by priority, due date
 * TODO Command to view all tags
 * TODO Command to list all tasks by tag
 * TODO Search command
 * TODO Write a high level set of tasks that help me do my weekly RTM process
 * TODO Tune the code as a learning exercise. Make as concise, elegant as possible
-
+* TODO Add undo support for last action, using the timeline
+** TODO Keep a stack of the actions to undo - one timeline for the lifetime of the app
 
 
 

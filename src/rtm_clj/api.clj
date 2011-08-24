@@ -9,7 +9,7 @@
   (:import
    [java.security MessageDigest]
    [java.io ByteArrayInputStream]
-   [java.net URI]))
+   [java.net URI URLEncoder]))
 
 ;; # Constants
 (def *api-url* "http://api.rememberthemilk.com/services/rest/?")
@@ -21,10 +21,13 @@
 
 ;; # State
 
-;; These are the 2 things needed to authenticate with RTM.
+;; These are the 3 things needed to authenticate with RTM.
 (def *api-key* (atom ""))
 (def *shared-secret* (atom ""))
 (def *token* (atom nil))
+
+;; Session specific
+(def *timeline* (atom nil))
 
 ;; Helper functions to store the state away in the atoms.
 (defn get-token
@@ -34,6 +37,15 @@
 (defn set-token!
   [token]
   (reset! *token* token))
+
+;; Creates a new timeline if necessary, and caches it
+(declare rtm-timelines-create)
+
+(defn- get-timeline
+  []
+  (if-not @*timeline*
+    (reset! *timeline* (rtm-timelines-create)))
+  @*timeline*)
 
 (defn set-api-key!
   "Sets the key for the session"
@@ -81,12 +93,12 @@
 
 ;; Accepts a map, and converts it into key value pairs for the url
 (defn- build-params
-  "Builds key=value&key=value&key=value to append onto url"
-  ([param-map]
-     (build-params param-map "=" "&"))
-  ;; this is used when signing parameters, when the = and & is stripped out.
-  ([param-map key-val-separator param-separator]
-     (apply str (drop-last (interleave (map #(str (first %) key-val-separator (second %)) param-map) (repeat param-separator))))))
+  ([request-params]
+     (build-params request-params "=" "&" true))
+  ([request-params key-val-separator param-separator encode?]
+     (let [encode (if (true? encode?) #(URLEncoder/encode (str %) "UTF-8") #(str %))
+           coded (for [[n v] request-params] (str (encode n) key-val-separator (encode v)))]
+       (apply str (interpose param-separator coded)))))
 
 (defn- md5sum
   [s]
@@ -108,7 +120,7 @@
   [param-map]
   (if (shared-secret-set?)
     (let [sorted-map (sort param-map)]
-      (md5sum (str @*shared-secret* (build-params sorted-map "" ""))))))
+      (md5sum (str @*shared-secret* (build-params sorted-map "" "" false))))))
 
 ;; Builds the url, with the api and signature parameters correctly applied.
 (defn build-rtm-url
@@ -130,6 +142,12 @@
           url (str (build-rtm-url param-map-with-method))]
       (:body (http/get url)))
     (println "Shared secret and / or api key not set")))
+
+(defn- call-api-with-token
+  ([method]
+     (call-api-with-token method {}))
+  ([method param-map]
+     (call-api method (assoc param-map "auth_token" (get-token)))))
 
 ;; The responses that come back from RTM are xml. This converts into an
 ;; xml structure so that we can parse it.
@@ -206,7 +224,7 @@ returns nil"
 (defn rtm-lists-getList
   "Returns the lists for the user"
   []
-  (if-let [list-xml (to-xml (call-api "rtm.lists.getList" {"auth_token" (get-token)}))]
+  (if-let [list-xml (to-xml (call-api-with-token "rtm.lists.getList"))]
     (for [x (xml-seq list-xml) :when (= :list (:tag x))]
       (:attrs x))))
 
@@ -217,6 +235,13 @@ returns nil"
     (for [note (:content notes) :when (= :note (:tag note))]
       (:attrs note))))
 
+;; Parses any response that rturns a task series
+(defn- parse-task-series-response
+  [xml]
+  (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
+    (for [task (:content task-series) :when (= :task (:tag task))]
+      (assoc (:attrs task-series) :due (:due (:attrs task)) :notes (extract-notes task-series)))))
+
 ;; Returns all the tasks, or the tasks for a particular list. Supports the RTM
 ;; search filters. By default it uses status:incomplete to only return incomplete
 ;; tasks
@@ -226,7 +251,17 @@ returns nil"
   ([list-id]
      (rtm-tasks-getList list-id "status:incomplete"))
   ([list-id list-filter]
-     (if-let [xml (to-xml (call-api "rtm.tasks.getList" {"auth_token" (get-token), "list_id" list-id, "filter" list-filter}))]
-       (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
-         (for [task (:content task-series) :when (= :task (:tag task))]
-           (assoc (:attrs task-series) :due (:due (:attrs task)) :notes (extract-notes task-series)))))))
+     (if-let [xml (to-xml (call-api-with-token "rtm.tasks.getList" {"list_id" list-id, "filter" list-filter}))]
+       (parse-task-series-response xml))))
+
+;; Timeline is required for any write tasks
+(defn rtm-timelines-create
+  []
+  (first (parse-response (call-api-with-token "rtm.timelines.create") :timeline)))
+
+;; Add a task
+(defn rtm-tasks-add
+  "Create and add a new task using smart add. The task is added to the inbox."
+  [name]
+  (if-let [xml (to-xml (call-api-with-token "rtm.tasks.add" {"timeline" (get-timeline), "parse" "1", "name" name}))]
+    (parse-task-series-response xml)))

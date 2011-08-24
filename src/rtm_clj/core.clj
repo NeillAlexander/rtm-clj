@@ -164,6 +164,17 @@
               :tasks
               (str "List: " (:name the-list)))))))))
 
+(defn- display-task
+  [task-data]
+  (title (str "Task: " (:name task-data)))
+  (println (str "Created: " (:created task-data)))
+  (println (str "Due: " (:due task-data)))
+  (println (str "URL: " (:url task-data)))
+  (doseq [note (flatten (:notes task-data))]
+    (println (str "Note: " (:title note))))
+  (divider)
+  (println))
+
 ;; Command for viewing a particular task
 (defn ^{:cmd "task", :also ["t"], :cache-id :tasks} view-task
   "Displays the details of a particular task from the last displayed list."
@@ -171,14 +182,15 @@
   (if-let [task ((cache-get :tasks) (as-int i))]
     (let [task-data (:data task)]
       (cache-put :last-task task-data)
-      (title (str "Task: " (:name task-data)))
-      (println (str "Created: " (:created task-data)))
-      (println (str "Due: " (:due task-data)))
-      (println (str "URL: " (:url task-data)))
-      (doseq [note (flatten (:notes task-data))]
-        (println (str "Note: " (:title note))))
-      (divider)
-      (println))))
+      (display-task task-data))))
+
+;; Command for adding a task
+(defn ^{:cmd "new", :also ["add"]} add-task
+  "Creates a new task using smart-add"
+  [& args]
+  (if-let [new-task (api/rtm-tasks-add (str/join " " args))]
+    (display-task (first (flatten new-task)))
+    (println "Failed to add task")))
 
 ;; # Dispatching Commands
 ;; This section of the code is the part that parses the input from the user, and
@@ -331,7 +343,7 @@ delegate to the call-cmd"
                     (fn [x] nil))
            (if-let [new-token (api/rtm-auth-getToken frob)]
              (if-let [valid-token (api/rtm-auth-checkToken new-token)]
-               (do
+               (do                 
                  (api/set-token! valid-token)
                  (api/save-state)
                  true)
