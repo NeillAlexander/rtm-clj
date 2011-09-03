@@ -76,10 +76,11 @@ Store as last, change the key to be the function name?
 ** DONE Make all api calls pure functions
 ** DONE Fix the arity issue (because now expects state - complicates the arity check)
 ** DONE Simplify api layer - no transformation. One to one mapping to rtm api. Just return the raw response.
-* TODO Re-organise the namespaces to core, xml, command, api
-* TODO Indexify - use zip map??
-* TODO In command ns, scope to tidy up xml parsing calls
+* DONE Re-organise the namespaces to core, xml, command, api
+* DONE Indexify - use zip map??
+* DONE In command ns, scope to tidy up xml parsing calls
   Make the parse calls multi-methods, and convert to xml within the xml ns
+* TODO Simplify display-and-cache
 * TODO Re-work the xml stuff - really need to get my head around zippers!
 * TODO Provide a way to delete a task
 * TODO Provide a way to mark a task as complete

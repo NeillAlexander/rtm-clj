@@ -16,9 +16,11 @@
 
 ;; used twice, so factored out
 (defn indexify
-  "Creates a map using the supplied collection, where each key is a number starting at zero"
-  [c]
-  (apply array-map (interleave (iterate inc 1) c)))
+  "Creates a map using the supplied collection, where each key is a number starting at i and incrementing"
+  ([coll]
+     (indexify coll 1))
+  ([coll i]
+     (apply array-map (interleave (iterate inc i) coll))))
 
 ;; This function displays the prompt, reads input, and returns the full line
 ;; as a String. Note that it is parameterized so that it can be used to request

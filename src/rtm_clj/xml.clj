@@ -28,6 +28,6 @@
 ;; Parses any response that rturns a task series
 (defn parse-task-series-response
   [xml]
-  (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
+  (for [task-series (xml-seq (to-xml xml)) :when (= :taskseries (:tag task-series))]
     (for [task (:content task-series) :when (= :task (:tag task))]
       (assoc (:attrs task-series) :due (:due (:attrs task)) :notes (extract-notes task-series)))))

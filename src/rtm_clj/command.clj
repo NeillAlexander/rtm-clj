@@ -180,7 +180,7 @@
      (let [idx (utils/as-int i)]
        (if-let [cached-lists (state/cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
-           (if-let [tasks (flatten (xml/parse-task-series-response (xml/to-xml (api/rtm-tasks-getList state (:id the-list)))))]
+           (if-let [tasks (flatten (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list))))]
              (display-and-cache
               (utils/indexify (create-id-map tasks))
               :tasks
@@ -199,7 +199,7 @@
 (defn ^{:cmd "new", :also ["add"]} add-task
   "Creates a new task using smart-add"
   [state & args]
-  (if-let [new-task (xml/parse-task-series-response (xml/to-xml (api/rtm-tasks-add state (str/join " " args))))]
+  (if-let [new-task (xml/parse-task-series-response (api/rtm-tasks-add state (str/join " " args)))]
     (display-task (first (flatten new-task)))
     (println "Failed to add task")))
 
