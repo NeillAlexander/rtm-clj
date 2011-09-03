@@ -2529,31 +2529,56 @@ $(document).ready(function() {
 </script><title>rtm-clj -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">rtm-clj</h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br /><p>A command line interface for Remember the Milk.</p>
 </div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.2.1</td></tr><tr><td class="dep-name">clj-http</td><td class="dotted"><hr /></td><td class="dep-version">0.1.3</td></tr><tr><td class="dep-name">swank-clojure/swank-clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.3.2</td></tr><tr><td class="dep-name">clojure-contrib</td><td class="dotted"><hr /></td><td class="dep-version">1.2.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.6.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#rtm-clj.xml">rtm-clj.xml</a></li><li><a href="#rtm-clj.api">rtm-clj.api</a></li><li><a href="#rtm-clj.state">rtm-clj.state</a></li><li><a href="#rtm-clj.utils">rtm-clj.utils</a></li><li><a href="#rtm-clj.command">rtm-clj.command</a></li><li><a href="#rtm-clj.core">rtm-clj.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.xml" name="rtm-clj.xml"><h1 class="project-name">rtm-clj.xml</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.xml
-  (:require [clojure.xml :as xml])
-  (:import [java.io ByteArrayInputStream]))</pre></tr><tr><td class="docs"><p>Returns the notes data from the task series xml</p>
-</td><td class="codes" /><pre class="brush: clojure">(defn- extract-notes
-  [task-series]
-  (for [notes (:content task-series) :when (= :notes (:tag notes))]
-    (for [note (:content notes) :when (= :note (:tag note))]
-      (:attrs note))))</pre></tr><tr><td class="docs"><p>Convert the string to xml</p>
+  (:require [clojure.xml :as xml]
+            [clojure.zip :as zip]
+            [clojure.contrib.zip-filter :as zf]
+            [clojure.contrib.zip-filter.xml :as zfx])
+  (:import [java.io ByteArrayInputStream]))</pre></tr><tr><td class="docs"><p>Convert the string to xml</p>
 
 <p>The responses that come back from RTM are xml. This converts into an
 xml structure so that we can parse it.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn to-xml
   [s]
   (let [input-stream (ByteArrayInputStream. (.getBytes s))]
-    (xml/parse input-stream)))</pre></tr><tr><td class="docs"><p>Simple function that parses the response xml string and returns the
+    (xml/parse input-stream)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- zip
+  [s]
+  (zip/xml-zip (to-xml s)))</pre></tr><tr><td class="docs"><p>Simple function that parses the response xml string and returns the
 value of the tag</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn parse-response
   [response tag-name]
   (when response
     (for [x (xml-seq (to-xml response)) :when (= tag-name (:tag x))]
-      (first (:content x)))))</pre></tr><tr><td class="docs"><p>Parses any response that rturns a task series</p>
+      (first (:content x)))))</pre></tr><tr><td class="docs"><p>Takes a map m, zip location loc, an attribute name att, and more attributes more.
+Associates the attribute into the map using the attribute from the xml as the value.</p>
+
+<p>Quick way to convert xml structure to a flatter map structure.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- assoc-attributes
+  [m loc att &amp; more]
+  (let [new-m (assoc m att (zfx/xml1-&gt; loc (zfx/attr att)))]
+    (if (seq more)
+      (recur new-m loc (first more) (rest more))
+      new-m)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- create-note-map
+  [loc]
+  (assoc-attributes {} loc :id :created :modified :title))</pre></tr><tr><td class="docs"><p>Assocs the notes into the map.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- extract-notes
+  [m task-series-loc]
+  (let [notes (map create-note-map (zfx/xml-&gt; task-series-loc :notes :note))]
+    (assoc m :notes notes)))</pre></tr><tr><td class="docs"><p>Creates a flat map of the key attributes from the xml, representing a task.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- create-task-map
+  [task-loc]
+  (let [task-series-loc (zip/up task-loc)]
+    ;; create task-series-id to avoid clash with task id, that way can have flat map
+    (-&gt; (assoc-attributes {:task-series-id (zfx/xml1-&gt; task-series-loc (zfx/attr :id))}
+                          task-series-loc :created :modified :name :source :url :location_id)
+        (assoc-attributes task-loc :id :due :has_due_time :added :completed
+                          :deleted :priority :postponed :estimate)
+        (extract-notes task-series-loc))))</pre></tr><tr><td class="docs"><p>Creates a flat map of the key task series data</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn parse-task-series-response
   [xml]
-  (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
-    (for [task (:content task-series) :when (= :task (:tag task))]
-      (assoc (:attrs task-series) :due (:due (:attrs task)) :notes (extract-notes task-series)))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.api" name="rtm-clj.api"><h1 class="project-name">rtm-clj.api</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This contains the functions that actually call the Remember the Milk API.
+  (let [zipped (zip xml)]
+    (map create-task-map (zfx/xml-&gt; zipped :tasks :list :taskseries :task))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.api" name="rtm-clj.api"><h1 class="project-name">rtm-clj.api</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This contains the functions that actually call the Remember the Milk API.
 The API is REST based, so it uses clj-http.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.api
   (:require
@@ -2663,12 +2688,14 @@ NB: it only returns a sub-set of the data currently. I may add more in as I go a
   (call-api-with-token state &quot;rtm.tasks.delete&quot;
     {&quot;timeline&quot; (:timeline state), &quot;list_id&quot; list-id, &quot;task_series_id&quot; task-series-id, &quot;task_id&quot; task-id}))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.state" name="rtm-clj.state"><h1 class="project-name">rtm-clj.state</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Contains the mutable stuff, and also the non-mutable state
 (if that makes sense)</p>
-</td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.state)</pre></tr><tr><td class="docs"><p>At some point I may make this configurable. This is where the
+</td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.state
+  (:require [rtm-clj.utils :as utils]))</pre></tr><tr><td class="docs"><p>At some point I may make this configurable. This is where the
 state is stored.</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *state-file* (str (System/getenv &quot;HOME&quot;) &quot;/.rtm-clj&quot;))</pre></tr><tr><td class="docs"><p>This is the cache for the session</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *cache* (atom {}))</pre></tr><tr><td class="docs"><p>Used to store data for the session</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn cache-put
   [key data]
+  (utils/debug (str &quot;Storing &quot; key &quot; --&gt; &quot; data))
   (swap! *cache* assoc key data))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn cache-get
   [key]
@@ -2718,12 +2745,14 @@ the current state.</p>
   (try
     (Integer/parseInt s)
     (catch Exception e nil)))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmethod as-int :default [x] nil)</pre></tr><tr><td class="docs"><p>Creates a map using the supplied collection, where each key is a number starting at zero</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmethod as-int :default [x] nil)</pre></tr><tr><td class="docs"><p>Creates a map using the supplied collection, where each key is a number starting at i and incrementing</p>
 
 <p>used twice, so factored out</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn indexify
-  [c]
-  (apply array-map (interleave (iterate inc 1) c)))</pre></tr><tr><td class="docs"><p>Displays the prompt for the user and reads input for stdin. Returns a vector
+  ([coll]
+     (indexify coll 1))
+  ([coll i]
+     (apply array-map (interleave (iterate inc i) coll))))</pre></tr><tr><td class="docs"><p>Displays the prompt for the user and reads input for stdin. Returns a vector
 of the individual words that were entered.</p>
 
 <p>This function displays the prompt, reads input, and returns the full line
@@ -2742,7 +2771,13 @@ make it more general.</p>
      (let [line (read-line)]
        (if (vf line)
          (recur s vf)
-         line))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.command" name="rtm-clj.command"><h1 class="project-name">rtm-clj.command</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This layer sits on top of the api layer and provides the higher level commands
+         line))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(def *debug-on* (atom false))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn switch-debug-on! [bool]
+  (reset! *debug-on* bool))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn debug [s]
+  (when @*debug-on*
+    (println s)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.command" name="rtm-clj.command"><h1 class="project-name">rtm-clj.command</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This layer sits on top of the api layer and provides the higher level commands
 for the app.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.command
   (:require [rtm-clj.api :as api]
@@ -2766,22 +2801,26 @@ for the app.</p>
   (divider)
   (println t)
   (divider))</pre></tr><tr><td class="docs"><p>Display the results. The contract is that the map must be in the following format:
-{0, {:id 123 :name "Inbox"}, 1 {:id 1234 :name "Sent"}}
-The map is cached using the provided key for future lookup.
-That is the mechanism for storing data in the session.</p>
-</td><td class="codes" /><pre class="brush: clojure">(defn- display-and-cache
-  &quot;Requires map in format: id, {:id id :name name}&quot;
-  [id-map cache-id heading]
+{0, {:id 123 :name "Inbox"}, 1 {:id 1234 :name "Sent"}}</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- display-id-map
+  &quot;Requires map in format: id, {:id id :name name}&quot;  
+  [heading id-map]
   (if (not (zero? (count id-map)))
     (do
-      (state/cache-put cache-id id-map)
-      (state/cache-put :last cache-id)
       (title heading)
       (doseq [item id-map]
         (println (str (key item) &quot; - &quot; (:name (val item)))))
       (divider)
       (println))
-    (println &quot;None&quot;)))</pre></tr><tr><td class="docs">
+    (println &quot;None&quot;))
+  id-map)</pre></tr><tr><td class="docs"><p>The map is cached using the provided key for future lookup.
+That is the mechanism for storing data in the session.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- cache-id-map
+  &quot;Requires map in format: id, {:id id :name name}&quot;
+  [cache-id id-map]
+  (state/cache-put cache-id id-map)
+  (state/cache-put :last cache-id)
+  id-map)</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn- display-task
   [task-data]
   (title (str &quot;Task: &quot; (:name task-data)))
@@ -2890,19 +2929,17 @@ to display all the tasks in list 0</p>
   &quot;Displays all the lists or all the tasks for the selected list&quot;
   ([state]
      (if-let [lists (get-lists state)]
-       (display-and-cache
-        (utils/indexify (create-id-map lists))
-        :lists
-        &quot;Lists&quot;)))
+       (-&gt;&gt; (utils/indexify (create-id-map lists))
+            (display-id-map &quot;Lists&quot;)
+            (cache-id-map :lists))))
   ([state i]
      (let [idx (utils/as-int i)]
        (if-let [cached-lists (state/cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
-           (if-let [tasks (flatten (xml/parse-task-series-response (xml/to-xml (api/rtm-tasks-getList state (:id the-list)))))]
-             (display-and-cache
-              (utils/indexify (create-id-map tasks))
-              :tasks
-              (str &quot;List: &quot; (:name the-list)))))))))</pre></tr><tr><td class="docs"><p>Command for viewing a particular task</p>
+           (if-let [tasks (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list)))]
+             (-&gt;&gt; (utils/indexify (create-id-map tasks))
+                  (display-id-map (str &quot;List: &quot; (:name the-list)))
+                  (cache-id-map :tasks))))))))</pre></tr><tr><td class="docs"><p>Command for viewing a particular task</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;task&quot;, :also [&quot;t&quot;], :cache-id :tasks} view-task
   &quot;Displays the details of a particular task from the last displayed list.&quot;
   [state i]
@@ -2913,9 +2950,15 @@ to display all the tasks in list 0</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;new&quot;, :also [&quot;add&quot;]} add-task
   &quot;Creates a new task using smart-add&quot;
   [state &amp; args]
-  (if-let [new-task (xml/parse-task-series-response (xml/to-xml (api/rtm-tasks-add state (str/join &quot; &quot; args))))]
-    (display-task (first (flatten new-task)))
-    (println &quot;Failed to add task&quot;)))</pre></tr><tr><td class="docs">
+  (if-let [new-task (xml/parse-task-series-response (api/rtm-tasks-add state (str/join &quot; &quot; args)))]
+    (display-task (first new-task))
+    (println &quot;Failed to add task&quot;)))</pre></tr><tr><td class="docs"><p>Command to enable debug</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;debug&quot;} switch-debug-on!
+  [state]
+  (utils/switch-debug-on! true))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;nodebug&quot;} switch-debug-off!
+  [state]
+  (utils/switch-debug-on! false))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;rm&quot;, :also [&quot;delete&quot;]} delete-task
   [state tasknum]
   (if-let [task ((state/cache-get :tasks) (utils/as-int tasknum))]
