@@ -41,3 +41,12 @@ of the individual words that were entered."
        (if (vf line)
          (recur s vf)
          line))))
+
+(def *debug-on* (atom false))
+
+(defn switch-debug-on! [bool]
+  (reset! *debug-on* bool))
+
+(defn debug [s]
+  (when @*debug-on*
+    (println s)))

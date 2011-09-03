@@ -1,6 +1,7 @@
 ;; Contains the mutable stuff, and also the non-mutable state
 ;; (if that makes sense)
-(ns rtm-clj.state)
+(ns rtm-clj.state
+  (:require [rtm-clj.utils :as utils]))
 
 ;; At some point I may make this configurable. This is where the
 ;; state is stored.
@@ -12,6 +13,7 @@
 (defn cache-put
   "Used to store data for the session"
   [key data]
+  (utils/debug (str "Storing " key " --> " data))
   (swap! *cache* assoc key data))
 
 (defn cache-get

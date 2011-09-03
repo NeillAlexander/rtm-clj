@@ -28,21 +28,27 @@
 
 ;; Display the results. The contract is that the map must be in the following format:
 ;; {0, {:id 123 :name "Inbox"}, 1 {:id 1234 :name "Sent"}}
-;; The map is cached using the provided key for future lookup.
-;; That is the mechanism for storing data in the session.
-(defn- display-and-cache
-  "Requires map in format: id, {:id id :name name}"
-  [id-map cache-id heading]
+(defn- display-id-map
+  "Requires map in format: id, {:id id :name name}"  
+  [heading id-map]
   (if (not (zero? (count id-map)))
     (do
-      (state/cache-put cache-id id-map)
-      (state/cache-put :last cache-id)
       (title heading)
       (doseq [item id-map]
         (println (str (key item) " - " (:name (val item)))))
       (divider)
       (println))
-    (println "None")))
+    (println "None"))
+  id-map)
+
+;; The map is cached using the provided key for future lookup.
+;; That is the mechanism for storing data in the session.
+(defn- cache-id-map
+  "Requires map in format: id, {:id id :name name}"
+  [cache-id id-map]
+  (state/cache-put cache-id id-map)
+  (state/cache-put :last cache-id)
+  id-map)
 
 (defn- display-task
   [task-data]
@@ -172,19 +178,17 @@
   "Displays all the lists or all the tasks for the selected list"
   ([state]
      (if-let [lists (get-lists state)]
-       (display-and-cache
-        (utils/indexify (create-id-map lists))
-        :lists
-        "Lists")))
+       (->> (utils/indexify (create-id-map lists))
+            (display-id-map "Lists")
+            (cache-id-map :lists))))
   ([state i]
      (let [idx (utils/as-int i)]
        (if-let [cached-lists (state/cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
            (if-let [tasks (flatten (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list))))]
-             (display-and-cache
-              (utils/indexify (create-id-map tasks))
-              :tasks
-              (str "List: " (:name the-list)))))))))
+             (->> (utils/indexify (create-id-map tasks))
+                  (display-id-map (str "List: " (:name the-list)))
+                  (cache-id-map :tasks))))))))
 
 ;; Command for viewing a particular task
 (defn ^{:cmd "task", :also ["t"], :cache-id :tasks} view-task
@@ -202,6 +206,15 @@
   (if-let [new-task (xml/parse-task-series-response (api/rtm-tasks-add state (str/join " " args)))]
     (display-task (first (flatten new-task)))
     (println "Failed to add task")))
+
+;; Command to enable debug
+(defn ^{:cmd "debug"} switch-debug-on!
+  [state]
+  (utils/switch-debug-on! true))
+
+(defn ^{:cmd "nodebug"} switch-debug-off!
+  [state]
+  (utils/switch-debug-on! false))
 
 (defn ^{:cmd "rm", :also ["delete"]} delete-task
   [state tasknum]

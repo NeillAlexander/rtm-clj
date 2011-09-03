@@ -80,7 +80,7 @@ Store as last, change the key to be the function name?
 * DONE Indexify - use zip map??
 * DONE In command ns, scope to tidy up xml parsing calls
   Make the parse calls multi-methods, and convert to xml within the xml ns
-* TODO Simplify display-and-cache
+* DONE Simplify display-and-cache
 * TODO Re-work the xml stuff - really need to get my head around zippers!
 * TODO Provide a way to delete a task
 * TODO Provide a way to mark a task as complete
