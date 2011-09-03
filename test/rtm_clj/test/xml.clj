@@ -7,8 +7,11 @@
 
 (def simple-xml "<root><value>123</value></root>")
 
+(def error-xml "<?xml version='1.0' encoding='UTF-8'?><rsp stat=\"fail\"><err code=\"96\" msg=\"Invalid signature\"/></rsp>")
+
 (deftest test-parse-response
   (is (= "123" (first (xml/parse-response simple-xml :value)))))
+
 
 
 

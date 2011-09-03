@@ -52,6 +52,7 @@
 
 (defn- display-task
   [task-data]
+  (utils/debug (str "Task data:" task-data))
   (title (str "Task: " (:name task-data)))
   (println (str "Created: " (:created task-data)))
   (println (str "Due: " (:due task-data)))
@@ -203,8 +204,10 @@
 (defn ^{:cmd "new", :also ["add"]} add-task
   "Creates a new task using smart-add"
   [state & args]
-  (if-let [new-task (xml/parse-task-series-response (api/rtm-tasks-add state (str/join " " args)))]
-    (display-task (first new-task))
+  (if-let [new-task (xml/parse-add-task-response (api/rtm-tasks-add state (str/join " " args)))]
+    (do
+      (utils/debug (str "new-task: " new-task))
+      (display-task (first new-task)))
     (println "Failed to add task")))
 
 ;; Command to enable debug
@@ -217,6 +220,10 @@
   (utils/switch-debug-on! false))
 
 (defn ^{:cmd "rm", :also ["delete"]} delete-task
-  [state tasknum]
-  (if-let [task ((state/cache-get :tasks) (utils/as-int tasknum))]
-    task))
+  [state tasknum & others]
+  (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
+    (do
+      (utils/debug (str "task: " task))
+      (utils/debug (api/rtm-tasks-delete state (:list-id task) (:task-series-id task) (:id task)))
+      (if (seq others)
+        (recur state (first others) (rest others))))))

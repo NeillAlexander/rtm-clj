@@ -82,7 +82,7 @@ Store as last, change the key to be the function name?
   Make the parse calls multi-methods, and convert to xml within the xml ns
 * DONE Simplify display-and-cache
 * DONE Re-work the xml stuff - really need to get my head around zippers!
-* TODO Provide a way to delete a task
+* DONE Provide a way to delete a task
 * TODO Provide a way to mark a task as complete
 c 1 2 3
 Marks tasks 1, 2, and 3 as complete

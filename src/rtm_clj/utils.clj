@@ -49,4 +49,6 @@ of the individual words that were entered."
 
 (defn debug [s]
   (when @*debug-on*
-    (println s)))
+    (do
+      (println)
+      (println s))))

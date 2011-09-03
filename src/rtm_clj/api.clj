@@ -3,6 +3,8 @@
 (ns rtm-clj.api
 
   (:require
+   [rtm-clj.utils :as utils]
+   [rtm-clj.xml :as xml]
    [clj-http.client :as http])
 
   (:import
@@ -44,6 +46,7 @@
   [state param-map]
   (if (shared-secret-set? state)
     (let [sorted-map (sort param-map)]
+      (utils/debug (str "Signature map: " sorted-map))
       (md5sum (str (:shared-secret state) (build-params sorted-map "" "" false))))))
 
 ;; Builds the url, with the api and signature parameters correctly applied.
@@ -53,8 +56,17 @@
      (build-rtm-url state param-map *api-url*))
   ([state param-map base-url]
      (let [all-params (assoc param-map "api_key" (:api-key state))
-           api-sig (sign-params state all-params)]
-       (str base-url (build-params all-params) "&api_sig=" api-sig))))
+           api-sig (sign-params state all-params)
+           url (str base-url (build-params all-params) "&api_sig=" api-sig)]
+       (utils/debug url)
+       url)))
+
+(defn- check-for-error
+  [response-xml]
+  (if-let [error (xml/parse-error response-xml)]
+    (do
+      (println (str "Error: " (:msg error))))
+    response-xml))
 
 ;; Abstracts out the the REST call.
 ;; method is the name of the RTM method.
@@ -64,7 +76,7 @@
   (if (and (shared-secret-set? state) (api-key-set? state))
     (let [param-map-with-method (assoc param-map "method" method)
           url (str (build-rtm-url state param-map-with-method))]
-      (:body (http/get url)))
+      (check-for-error (:body (http/get url))))
     (println "Shared secret and / or api key not set")))
 
 (defn- call-api-with-token
@@ -141,5 +153,6 @@ returns nil"
 ;; Delete a task
 (defn rtm-tasks-delete
   [state list-id task-series-id task-id]
+  (utils/debug (str "Delete params: list-id = " list-id))
   (call-api-with-token state "rtm.tasks.delete"
-    {"timeline" (:timeline state), "list_id" list-id, "task_series_id" task-series-id, "task_id" task-id}))
+    {"timeline" (:timeline state), "list_id" list-id, "taskseries_id" task-series-id, "task_id" task-id}))
