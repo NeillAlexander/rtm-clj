@@ -185,7 +185,7 @@
      (let [idx (utils/as-int i)]
        (if-let [cached-lists (state/cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
-           (if-let [tasks (flatten (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list))))]
+           (if-let [tasks (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list)))]
              (->> (utils/indexify (create-id-map tasks))
                   (display-id-map (str "List: " (:name the-list)))
                   (cache-id-map :tasks))))))))
@@ -204,7 +204,7 @@
   "Creates a new task using smart-add"
   [state & args]
   (if-let [new-task (xml/parse-task-series-response (api/rtm-tasks-add state (str/join " " args)))]
-    (display-task (first (flatten new-task)))
+    (display-task (first new-task))
     (println "Failed to add task")))
 
 ;; Command to enable debug

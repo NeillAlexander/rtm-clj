@@ -21,9 +21,3 @@
   (is (= true (arity-matches-args echo ["hello there"])))
   (is (= true (arity-matches-args echo ["hello there everyone"])))
   (is (= true (arity-matches-args echo ["hello there everyone in the world"]))))
-
-(def test-xml (slurp "test/rtm_clj/test/list.xml"))
-(def task-series-xml (slurp "test/rtm_clj/test/task-series.xml"))
-
-(deftest test-parse-task-series
-  )
