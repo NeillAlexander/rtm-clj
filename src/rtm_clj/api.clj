@@ -3,91 +3,15 @@
 (ns rtm-clj.api
 
   (:require
-   [clj-http.client :as http]
-   [clojure.xml :as xml])
+   [clj-http.client :as http])
 
   (:import
    [java.security MessageDigest]
-   [java.io ByteArrayInputStream]
-   [java.net URI URLEncoder]))
+   [java.net URLEncoder]))
 
 ;; # Constants
 (def *api-url* "http://api.rememberthemilk.com/services/rest/?")
 (def *auth-url-base* "http://www.rememberthemilk.com/services/auth/?")
-
-;; At some point I may make this configurable. This is where the
-;; state is stored.
-(def *state-file* (str (System/getenv "HOME") "/.rtm-clj"))
-
-;; # State
-
-;; These are the 3 things needed to authenticate with RTM.
-(def *api-key* (atom ""))
-(def *shared-secret* (atom ""))
-(def *token* (atom nil))
-
-;; Session specific
-(def *timeline* (atom nil))
-
-;; Helper functions to store the state away in the atoms.
-(defn get-token
-  []
-  @*token*)
-
-(defn set-token!
-  [token]
-  (reset! *token* token))
-
-;; Creates a new timeline if necessary, and caches it
-(declare rtm-timelines-create)
-
-(defn- get-timeline
-  []
-  (if-not @*timeline*
-    (reset! *timeline* (rtm-timelines-create)))
-  @*timeline*)
-
-(defn set-api-key!
-  "Sets the key for the session"
-  [key]
-  (reset! *api-key* key))
-
-(defn set-shared-secret!
-  "Sets the shared secret for the session"
-  [secret]
-  (reset! *shared-secret* secret))
-
-;; And a helper function to get the current state.
-(defn get-state
-  []
-  {:api-key @*api-key* :shared-secret @*shared-secret* :token (get-token)})
-
-;; ## Persistence
-;; Store the state to a file, using the default location.
-(defn save-state
-  "Save the api key and shared secret to a file"
-  ([]
-     (save-state *state-file*))
-  ([f]
-     (spit f (get-state))))
-
-;; Load the state up again. This is called on startup. Note
-;; the exclamation mark, due to the fact that it overrides
-; the current state.
-(defn load-state!
-  "Tries to set up the api key and shared secret from a file"
-  ([]
-     (load-state! *state-file*))
-  ([f]
-     (try
-       (if-let [ state (read-string (slurp f))]
-         (do
-           (set-api-key! (:api-key state))
-           (set-shared-secret! (:shared-secret state))
-           (set-token! (:token state))
-           state))
-       (catch Exception e
-         nil))))
 
 ;; # URL Building
 
@@ -105,57 +29,49 @@
   (.toString (BigInteger. 1 (.digest (MessageDigest/getInstance "MD5") (.getBytes s))) 16))
 
 ;; Building up the vocabulary...
-(defn- shared-secret-set?
-  []
-  (not (empty? @*shared-secret*)))
+(defn shared-secret-set?
+  [state]
+  (not (empty? (:shared-secret state))))
 
-(defn- api-key-set?
-  []
-  (not (empty? @*api-key*)))
+(defn api-key-set?
+  [state]
+  (not (empty? (:api-key state))))
 
 ;; See [RTM Authentication](http://www.rememberthemilk.com/services/api/authentication.rtm)
 ;; documentation.
 (defn- sign-params
   "This does the signing that RTM api requires"
-  [param-map]
-  (if (shared-secret-set?)
+  [state param-map]
+  (if (shared-secret-set? state)
     (let [sorted-map (sort param-map)]
-      (md5sum (str @*shared-secret* (build-params sorted-map "" "" false))))))
+      (md5sum (str (:shared-secret state) (build-params sorted-map "" "" false))))))
 
 ;; Builds the url, with the api and signature parameters correctly applied.
 (defn build-rtm-url
   "Builds the url to hit the rest service"
-  ([param-map]
-     (build-rtm-url param-map *api-url*))
-  ([param-map base-url]
-     (let [all-params (assoc param-map "api_key" @*api-key*)
-           api-sig (sign-params all-params)]
+  ([state param-map]
+     (build-rtm-url state param-map *api-url*))
+  ([state param-map base-url]
+     (let [all-params (assoc param-map "api_key" (:api-key state))
+           api-sig (sign-params state all-params)]
        (str base-url (build-params all-params) "&api_sig=" api-sig))))
 
 ;; Abstracts out the the REST call.
 ;; method is the name of the RTM method.
 ;; The param-map contains the key/value pairs for the http request params.
 (defn- call-api
-  [method param-map]
-  (if (and (shared-secret-set?) (api-key-set?))
+  [state method param-map]
+  (if (and (shared-secret-set? state) (api-key-set? state))
     (let [param-map-with-method (assoc param-map "method" method)
-          url (str (build-rtm-url param-map-with-method))]
+          url (str (build-rtm-url state param-map-with-method))]
       (:body (http/get url)))
     (println "Shared secret and / or api key not set")))
 
 (defn- call-api-with-token
-  ([method]
-     (call-api-with-token method {}))
-  ([method param-map]
-     (call-api method (assoc param-map "auth_token" (get-token)))))
-
-;; The responses that come back from RTM are xml. This converts into an
-;; xml structure so that we can parse it.
-(defn- to-xml
-  "Convert the string to xml"
-  [s]
-  (let [input-stream (ByteArrayInputStream. (.getBytes s))]
-    (xml/parse input-stream)))
+  ([state method]
+     (call-api-with-token state method {}))
+  ([state method param-map]
+     (call-api state method (assoc param-map "auth_token" (:token state)))))
 
 ;; # The Actual RTM Methods
 ;; These are the top-level api functions, corresponding (mostly) to
@@ -167,80 +83,37 @@
 ;; Returns the full response map from clj-http.
 (defn rtm-test-echo
   "Calls the rtm.test.echo method with the specified params"
-  ([]
-     (rtm-test-echo {"dummy" "value"}))
-  ([param-map]
-     (call-api "rtm.test.echo" param-map)))
-
-(defn- parse-response
-  [response tag-name]
-  (when response
-    (for [x (xml-seq (to-xml response)) :when (= tag-name (:tag x))]
-      (first (:content x)))))
+  ([state]
+     (rtm-test-echo state {"dummy" "value"}))
+  ([state param-map]
+     (call-api state "rtm.test.echo" param-map)))
 
 ;; Returns a frob which is required in the call to authenticate the
 ;; user.
 (defn rtm-auth-getFrob
   "Calls the rtm.auth.getFrob method"
-  []
-  (first (parse-response (call-api "rtm.auth.getFrob" {}) :frob)))
-
-;; Generates the url that the user needs to access in order to grant
-;; access for the client to access their account, and launches the
-;; browser. Returns the frob.
-(defn request-authorization
-  "See http://www.rememberthemilk.com/services/api/authentication.rtm"
-  []
-  (if-let [frob (rtm-auth-getFrob)]
-    (do
-      (if-let [url (build-rtm-url {"perms" "delete", "frob" frob} *auth-url-base*)]
-        (.browse (java.awt.Desktop/getDesktop) (URI. url)))
-      frob)))
+  [state]
+  (call-api state "rtm.auth.getFrob" {}))
 
 ;; Puts in the call to the api for an auth token, which will be available
 ;; if the user has authorized access
-;; can do this
-;; (def token (rtm-auth-checkToken (rtm-auth-getToken (request-authorization))))
-;; if that is truthy, then we're in
 (defn rtm-auth-getToken
-  [frob]
-  (first (parse-response (call-api "rtm.auth.getToken" {"frob" frob}) :token)))
+  [state frob]
+  (call-api state "rtm.auth.getToken" {"frob" frob}))
 
 ;; If the token is valid, then it is returned, otherwise nil
 (defn rtm-auth-checkToken
   "Checks if the token is still valid. Returns the token if it is valid, otherwise
 returns nil"
-  [token]
-  (first (parse-response (call-api "rtm.auth.checkToken" {"auth_token" token}) :token)))
-
-(defn have-valid-token?
-  []
-  (let [token (get-token)]
-    (rtm-auth-checkToken token)))
-
+  [state token]
+  (call-api state "rtm.auth.checkToken" {"auth_token" token}))
 
 ;; Returns the lists for the user as a sequence in the following format:
 ;; ({:id "list_id" :name "list_name"} {:id "another_list" :name "another list name"} etc)
 (defn rtm-lists-getList
   "Returns the lists for the user"
-  []
-  (if-let [list-xml (to-xml (call-api-with-token "rtm.lists.getList"))]
-    (for [x (xml-seq list-xml) :when (= :list (:tag x))]
-      (:attrs x))))
-
-(defn- extract-notes
-  "Returns the notes data from the task series xml"
-  [task-series]
-  (for [notes (:content task-series) :when (= :notes (:tag notes))]
-    (for [note (:content notes) :when (= :note (:tag note))]
-      (:attrs note))))
-
-;; Parses any response that rturns a task series
-(defn- parse-task-series-response
-  [xml]
-  (for [task-series (xml-seq xml) :when (= :taskseries (:tag task-series))]
-    (for [task (:content task-series) :when (= :task (:tag task))]
-      (assoc (:attrs task-series) :due (:due (:attrs task)) :notes (extract-notes task-series)))))
+  [state]
+  (call-api-with-token state "rtm.lists.getList"))
 
 ;; Returns all the tasks, or the tasks for a particular list. Supports the RTM
 ;; search filters. By default it uses status:incomplete to only return incomplete
@@ -248,20 +121,25 @@ returns nil"
 ;; NB: it only returns a sub-set of the data currently. I may add more in as I go along...
 (defn rtm-tasks-getList
   "Gets all the tasks for a particular list, or all tasks if not list-id provided"
-  ([list-id]
-     (rtm-tasks-getList list-id "status:incomplete"))
-  ([list-id list-filter]
-     (if-let [xml (to-xml (call-api-with-token "rtm.tasks.getList" {"list_id" list-id, "filter" list-filter}))]
-       (parse-task-series-response xml))))
+  ([state list-id]
+     (rtm-tasks-getList state list-id "status:incomplete"))
+  ([state list-id list-filter]
+     (call-api-with-token state "rtm.tasks.getList" {"list_id" list-id, "filter" list-filter})))
 
 ;; Timeline is required for any write tasks
 (defn rtm-timelines-create
-  []
-  (first (parse-response (call-api-with-token "rtm.timelines.create") :timeline)))
+  [state]
+  (call-api-with-token state "rtm.timelines.create"))
 
 ;; Add a task
 (defn rtm-tasks-add
   "Create and add a new task using smart add. The task is added to the inbox."
-  [name]
-  (if-let [xml (to-xml (call-api-with-token "rtm.tasks.add" {"timeline" (get-timeline), "parse" "1", "name" name}))]
-    (parse-task-series-response xml)))
+  [state name]
+  (call-api-with-token state "rtm.tasks.add"
+    {"timeline" (:timeline state), "parse" "1", "name" name}))
+
+;; Delete a task
+(defn rtm-tasks-delete
+  [state list-id task-series-id task-id]
+  (call-api-with-token state "rtm.tasks.delete"
+    {"timeline" (:timeline state), "list_id" list-id, "task_series_id" task-series-id, "task_id" task-id}))

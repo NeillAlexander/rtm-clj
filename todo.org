@@ -1,7 +1,7 @@
 * DONE Write the command line prompt
 ** DONE make prompt configurable
 ** DONE Make it easier to call command from repl: call "help like this"
-Split out the string in the call function, rather than in the prompt! function
+Split out the string in the call function, rather than in the prompt! function.
 ** DONE check arity when calling commands
 ** DONE make help work correctly (print the doc string)
 ** DONE Define a test case for the line parser
@@ -69,6 +69,18 @@ Store as last, change the key to be the function name?
 ** DONE Request a timeline on login
 ** DONE Support the shortcuts that the web app supports?
 ^today !1 etc - just set parse to 1
+* DONE Remove all state from the api namespace
+** DONE Convert the separate states into a map
+** DONE Always pass it into the functions
+** DONE Move the helper state stuff up into core
+** DONE Make all api calls pure functions
+** DONE Fix the arity issue (because now expects state - complicates the arity check)
+** DONE Simplify api layer - no transformation. One to one mapping to rtm api. Just return the raw response.
+* TODO Re-organise the namespaces to core, xml, command, api
+* TODO Indexify - use zip map??
+* TODO In command ns, scope to tidy up xml parsing calls
+  Make the parse calls multi-methods, and convert to xml within the xml ns
+* TODO Re-work the xml stuff - really need to get my head around zippers!
 * TODO Provide a way to delete a task
 * TODO Provide a way to mark a task as complete
 c 1 2 3
