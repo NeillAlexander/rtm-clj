@@ -61,11 +61,15 @@
        (utils/debug url)
        url)))
 
+;; This should probably work differently. Doesn't really make sense for a general
+;; api call, only in context of the command line.
 (defn- check-for-error
+  "A bit ugly, but it at least logs an error if the api call failed."
   [response-xml]
   (if-let [error (xml/parse-error response-xml)]
     (do
-      (println (str "Error: " (:msg error))))
+      (println (str "Error: " (:msg error)))
+      nil)
     response-xml))
 
 ;; Abstracts out the the REST call.
@@ -156,3 +160,8 @@ returns nil"
   (utils/debug (str "Delete params: list-id = " list-id))
   (call-api-with-token state "rtm.tasks.delete"
     {"timeline" (:timeline state), "list_id" list-id, "taskseries_id" task-series-id, "task_id" task-id}))
+
+(defn rtm-transactions-undo
+  [state timeline transaction-id]
+  (call-api-with-token state "rtm.transactions.undo"
+    {"timeline" timeline, "transaction_id" transaction-id}))

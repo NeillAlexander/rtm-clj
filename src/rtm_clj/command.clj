@@ -29,17 +29,19 @@
 ;; Display the results. The contract is that the map must be in the following format:
 ;; {0, {:id 123 :name "Inbox"}, 1 {:id 1234 :name "Sent"}}
 (defn- display-id-map
-  "Requires map in format: id, {:id id :name name}"  
-  [heading id-map]
-  (if (not (zero? (count id-map)))
-    (do
-      (title heading)
-      (doseq [item id-map]
-        (println (str (key item) " - " (:name (val item)))))
-      (divider)
-      (println))
-    (println "None"))
-  id-map)
+  "Requires map in format: id, {:id id :name name}"
+  ([heading id-map]
+     (display-id-map heading :name id-map))
+  ([heading name-key id-map]
+     (if (not (zero? (count id-map)))
+       (do
+         (title heading)
+         (doseq [item id-map]
+           (println (str (key item) " - " (name-key (val item)))))
+         (divider)
+         (println))
+       (println "None"))
+     id-map))
 
 ;; The map is cached using the provided key for future lookup.
 ;; That is the mechanism for storing data in the session.
@@ -219,11 +221,32 @@
   [state]
   (utils/switch-debug-on! false))
 
+(defn- cache-if-undoable
+  "Takes the raw xml response, and caches the details if it is undoable. The msg is what is displayed in the history."
+  [state msg xml-response]
+  (if-let [undoable (xml/parse-undoable xml-response (:timeline state))]
+    (state/store-undoable (assoc undoable :message msg)))
+  xml-response)
+
 (defn ^{:cmd "rm", :also ["delete"]} delete-task
   [state tasknum & others]
   (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
     (do
       (utils/debug (str "task: " task))
-      (utils/debug (api/rtm-tasks-delete state (:list-id task) (:task-series-id task) (:id task)))
+      (utils/debug (cache-if-undoable state (str "deleted task \"" (:name task) "\"")
+                                      (api/rtm-tasks-delete state (:list-id task) (:task-series-id task) (:id task))))
       (if (seq others)
         (recur state (first others) (rest others))))))
+
+(defn ^{:cmd "undo"} undo
+  "Displays undoable actions and allows to undo"
+  ([state]
+     (->> (utils/indexify (state/undoables))
+                  (display-id-map "Undoable Tasks" :message)
+                  (cache-id-map :undos)))
+  ([state idx]
+     (if-let [undo-map (state/cache-get :undos)]
+       (if-let [um (undo-map (utils/as-int idx))]
+         (if (api/rtm-transactions-undo state (:timeline um) (:transaction-id um))
+           (state/remove-undoable (utils/as-int idx)))
+         (println "Error: Nothing found to undo")))))

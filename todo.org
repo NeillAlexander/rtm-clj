@@ -83,25 +83,33 @@ Store as last, change the key to be the function name?
 * DONE Simplify display-and-cache
 * DONE Re-work the xml stuff - really need to get my head around zippers!
 * DONE Provide a way to delete a task
+* DONE Add undo support for last action, using the timeline
+** DONE Keep a stack of the actions to undo - one timeline for the lifetime of the app
+** DONE Add a "undo" command which shows a history of all actions and whether they are undoable
+** DONE Add undo which takes a number - prompt to confirm
 * TODO Provide a way to mark a task as complete
 c 1 2 3
 Marks tasks 1, 2, and 3 as complete
 Add a "Marking as complete - are you sure" prompt
+* TODO Create a list
+* TODO Delete a list
 * TODO Command to move a task to another list
 ** TODO Need to provide move by name, as well as by id
-* TODO Rename a task
-* TODO Change due date on a task
+* TODO Make to do list self hosting in RTM
 * TODO Change priority on a task
 * TODO Ability to sort a list by priority, due date
+* TODO Add a note to a task
+* TODO Rename a task
+* TODO Change due date on a task
 * TODO Command to view all tags
 * TODO Command to list all tasks by tag
 * TODO Search command
 * TODO Write a high level set of tasks that help me do my weekly RTM process
 * TODO Tune the code as a learning exercise. Make as concise, elegant as possible
-* TODO Add undo support for last action, using the timeline
-** TODO Keep a stack of the actions to undo - one timeline for the lifetime of the app
 
 
+* TODO Update the README
+* TODO Decide whether or not to do any more..
 
 * Maybe
 ** TODO Up key should cycle through history?

@@ -86,3 +86,13 @@ to the task tag"
       (let [err-loc (zfx/xml1-> zipped :err)]
         (assoc-attributes {} err-loc :code :msg))
       nil)))
+
+(defn parse-undoable
+  "Returns a map with the details for the undo, or nil if not undoable."
+  [xml timeline]
+  (if-let [transaction (zfx/xml1-> (zip/xml-zip (to-xml xml)) :transaction)]
+    (let [undoable (zfx/xml1-> transaction (zfx/attr :undoable))]
+      (if (= "1" undoable)
+        {:transaction-id (zfx/xml1-> transaction (zfx/attr :id)),
+         :timeline timeline}
+        nil))))

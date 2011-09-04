@@ -7,6 +7,9 @@
 ;; state is stored.
 (def *state-file* (str (System/getenv "HOME") "/.rtm-clj"))
 
+;; This stores all the undoable tasks
+(def *undoables* (atom ()))
+
 ;; This is the cache for the session
 (def *cache* (atom {}))
 
@@ -62,3 +65,15 @@
        (read-string (slurp f))       
        (catch Exception e
          (new-state)))))
+
+;; stores it away for future reference
+(defn store-undoable
+  [m]
+  (swap! *undoables* conj m))
+
+(defn remove-undoable
+  [idx]
+  (utils/debug (str "Removing undoable: " idx))
+  (swap! *undoables* #(apply list (vals (dissoc  (utils/indexify %) idx)))))
+
+(defn undoables [] @*undoables*)
