@@ -180,3 +180,10 @@ returns nil"
   [state name]
   (call-api-with-token state "rtm.lists.add"
     {"timeline" (:timeline state), "name" name}))
+
+;; Move task to list
+(defn rtm-tasks-moveTo
+  [state from-list-id to-list-id task-series-id task-id]
+  (call-api-with-token state "rtm.tasks.moveTo"
+    {"timeline" (:timeline state), "from_list_id" from-list-id, "to_list_id" to-list-id,
+     "taskseries_id" task-series-id, "task_id" task-id}))

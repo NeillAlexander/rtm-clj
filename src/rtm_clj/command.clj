@@ -266,3 +266,18 @@
   "Creates a new list"
   [state & name]
   (api/rtm-lists-add state (str/join " " name)))
+
+(defn ^{:cmd "move", :also ["mv"]} move-task
+  "Move tasks by id to a list, which will be prompted for."
+  [state task-idx & more]
+  (display-lists state)
+  (if-let [to-list ((state/cache-get :lists) (utils/as-int
+                                              (utils/prompt! "Move task(s) to which list? " (complement utils/as-int))))]
+    (loop [tasknum task-idx
+           others more]        
+      (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
+        (do          
+          (utils/debug (cache-if-undoable state (str "Moved task \"" (:name task) "\" to " (:name to-list))
+                                          (api/rtm-tasks-moveTo state (:list-id task) (:id to-list) (:task-series-id task) (:id task))))
+          (if (seq others)
+            (recur (first others) (rest others))))))))
