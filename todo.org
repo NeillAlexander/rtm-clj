@@ -87,7 +87,7 @@ Store as last, change the key to be the function name?
 ** DONE Keep a stack of the actions to undo - one timeline for the lifetime of the app
 ** DONE Add a "undo" command which shows a history of all actions and whether they are undoable
 ** DONE Add undo which takes a number - prompt to confirm
-* TODO Provide a way to mark a task as complete
+* DONE Provide a way to mark a task as complete
 c 1 2 3
 Marks tasks 1, 2, and 3 as complete
 Add a "Marking as complete - are you sure" prompt

@@ -154,14 +154,23 @@ returns nil"
   (call-api-with-token state "rtm.tasks.add"
     {"timeline" (:timeline state), "parse" "1", "name" name}))
 
+(defn- call-task-method
+  [method-name state list-id task-series-id task-id]
+  (utils/debug (str method-name " params: list-id = " list-id))
+  (call-api-with-token state method-name
+    {"timeline" (:timeline state), "list_id" list-id, "taskseries_id" task-series-id, "task_id" task-id}))
+
 ;; Delete a task
 (defn rtm-tasks-delete
   [state list-id task-series-id task-id]
-  (utils/debug (str "Delete params: list-id = " list-id))
-  (call-api-with-token state "rtm.tasks.delete"
-    {"timeline" (:timeline state), "list_id" list-id, "taskseries_id" task-series-id, "task_id" task-id}))
+  (call-task-method "rtm.tasks.delete" state list-id task-series-id task-id))
 
 (defn rtm-transactions-undo
   [state timeline transaction-id]
   (call-api-with-token state "rtm.transactions.undo"
     {"timeline" timeline, "transaction_id" transaction-id}))
+
+;; mark as task as complete
+(defn rtm-tasks-complete
+  [state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.complete" state list-id task-series-id task-id))

@@ -228,15 +228,27 @@
     (state/store-undoable (assoc undoable :message msg)))
   xml-response)
 
-(defn ^{:cmd "rm", :also ["delete"]} delete-task
-  [state tasknum & others]
+;; Helper function which abstracts out some common functionality when acting on a list
+;; of tasks (e.g. rm, mark as complete etc)
+(defn- task-command
+  [f undo-msg state tasknum & others]
   (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
     (do
       (utils/debug (str "task: " task))
-      (utils/debug (cache-if-undoable state (str "deleted task \"" (:name task) "\"")
-                                      (api/rtm-tasks-delete state (:list-id task) (:task-series-id task) (:id task))))
+      (utils/debug (cache-if-undoable state (str undo-msg " task \"" (:name task) "\"")
+                                      (f state (:list-id task) (:task-series-id task) (:id task))))
       (if (seq others)
-        (recur state (first others) (rest others))))))
+        (recur f undo-msg state (first others) (rest others))))))
+
+(defn ^{:cmd "rm", :also ["delete"]} delete-task
+  "Delete one or more tasks (by index)."
+  [state tasknum & others]
+  (task-command api/rtm-tasks-delete "Deleted" state tasknum others))
+
+(defn ^{:cmd "complete", :also ["c"]} complete-task
+  "Mark one or more tasks as complete (by index)."
+  [state tasknum & others]
+  (task-command api/rtm-tasks-complete "Completed" state tasknum others))
 
 (defn ^{:cmd "undo"} undo
   "Displays undoable actions and allows to undo"
