@@ -28,7 +28,7 @@
 
 (defn- md5sum
   [s]
-  (.toString (BigInteger. 1 (.digest (MessageDigest/getInstance "MD5") (.getBytes s))) 16))
+  (String/format "%1$032X" (into-array [(BigInteger. 1 (.digest (MessageDigest/getInstance "MD5") (.getBytes s)))])))
 
 ;; Building up the vocabulary...
 (defn shared-secret-set?
