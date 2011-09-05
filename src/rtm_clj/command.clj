@@ -39,8 +39,7 @@
          (doseq [item id-map]
            (println (str (key item) " - " (name-key (val item)))))
          (divider)
-         (println))
-       (println "None"))
+         (println)))
      id-map))
 
 ;; The map is cached using the provided key for future lookup.
@@ -262,3 +261,8 @@
          (if (api/rtm-transactions-undo state (:timeline um) (:transaction-id um))
            (state/remove-undoable (utils/as-int idx)))
          (println "Error: Nothing found to undo")))))
+
+(defn ^{:cmd "newlist", :also ["nl"]} create-new-list
+  "Creates a new list"
+  [state & name]
+  (api/rtm-lists-add state (str/join " " name)))

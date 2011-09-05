@@ -91,11 +91,13 @@ Store as last, change the key to be the function name?
 c 1 2 3
 Marks tasks 1, 2, and 3 as complete
 Add a "Marking as complete - are you sure" prompt
-* TODO Create a list
-* TODO Delete a list
+* DONE Create a list
 * TODO Command to move a task to another list
 ** TODO Need to provide move by name, as well as by id
 * TODO Make to do list self hosting in RTM
+* TODO Command to postpone a task
+* TODO Command to rename a task
+* TODO Delete a list
 * TODO Change priority on a task
 * TODO Ability to sort a list by priority, due date
 * TODO Add a note to a task

@@ -174,3 +174,9 @@ returns nil"
 (defn rtm-tasks-complete
   [state list-id task-series-id task-id]
   (call-task-method "rtm.tasks.complete" state list-id task-series-id task-id))
+
+;; Create a new list
+(defn rtm-lists-add
+  [state name]
+  (call-api-with-token state "rtm.lists.add"
+    {"timeline" (:timeline state), "name" name}))
