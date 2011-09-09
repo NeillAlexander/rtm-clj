@@ -52,3 +52,11 @@ of the individual words that were entered."
     (do
       (println)
       (println s))))
+
+(defn make-map-comparator
+  "Makes a comparator that can compare values determined by the keys. adaptor is applied to the result of the comparator,
+should be + for ascending or - for descending (or something else if you want to be funky!)"
+  ([f & keys]
+     (let [selector (apply comp (reverse keys))]    
+       (fn [map-a map-b]
+         (f (compare (selector map-a) (selector map-b)))))))

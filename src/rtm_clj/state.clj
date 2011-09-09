@@ -77,3 +77,10 @@
   (swap! *undoables* #(apply list (vals (dissoc  (utils/indexify %) idx)))))
 
 (defn undoables [] @*undoables*)
+
+(defn get-list-sort-order
+  "Retrieves the sort order for the list from the state or nil if none"
+  [state list-id]
+  (if-let [sort-order-map (:sort-order state)]
+    (sort-order-map list-id)
+    nil))

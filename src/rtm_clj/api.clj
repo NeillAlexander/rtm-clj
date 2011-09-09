@@ -28,7 +28,7 @@
 
 (defn- md5sum
   [s]
-  (String/format "%1$032X" (into-array [(BigInteger. 1 (.digest (MessageDigest/getInstance "MD5") (.getBytes s)))])))
+  (String/format "%1$032x" (into-array [(BigInteger. 1 (.digest (MessageDigest/getInstance "MD5") (.getBytes s)))])))
 
 ;; Building up the vocabulary...
 (defn shared-secret-set?
@@ -45,9 +45,10 @@
   "This does the signing that RTM api requires"
   [state param-map]
   (if (shared-secret-set? state)
-    (let [sorted-map (sort param-map)]
-      (utils/debug (str "Signature map: " sorted-map))
-      (md5sum (str (:shared-secret state) (build-params sorted-map "" "" false))))))
+    (let [sorted-map (sort param-map)
+          sig-string (str (:shared-secret state) (build-params sorted-map "" "" false))]
+      (utils/debug (str "Signature string: " sig-string))
+      (md5sum sig-string))))
 
 ;; Builds the url, with the api and signature parameters correctly applied.
 (defn build-rtm-url
@@ -55,6 +56,7 @@
   ([state param-map]
      (build-rtm-url state param-map *api-url*))
   ([state param-map base-url]
+     (utils/debug (str "Building url: " param-map base-url))
      (let [all-params (assoc param-map "api_key" (:api-key state))
            api-sig (sign-params state all-params)
            url (str base-url (build-params all-params) "&api_sig=" api-sig)]

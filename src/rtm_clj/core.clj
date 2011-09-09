@@ -139,7 +139,9 @@ with the rest of the args"
     (if (arity-matches-args f (inc (count args)))
       (try
         (apply f state args)
-        (catch Exception e (println (str "Exception: " (.getMessage e)) )))
+        (catch Exception e
+          (println (str "Exception: " (.toString e)))
+          (.printStackTrace e)))
       (do
         (println (str cmd ": wrong number of args"))
         (help cmd)))
@@ -160,7 +162,7 @@ delegate to the call-cmd"
   "This is repl, if you like, for rtm. Read a command, evaluate it, print the result, loop"
   [state]
   (call state (utils/prompt!))
-  (recur state))
+  (recur (state/load-state)))
 
 ;; Dynamically discover commands
 (defn- discover-commands

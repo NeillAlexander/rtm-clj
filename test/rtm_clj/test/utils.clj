@@ -1,4 +1,6 @@
-(ns rtm-clj.test.utils)
+(ns rtm-clj.test.utils
+  (:require [rtm-clj.utils :as utils])
+  (:use [clojure.test]))
 
 (def map-coll
   [{:notes (), :list-id "11413850", :estimate "", :name "Plan exercise for tomorrow (gym / run / cycle)", :postponed "0", :has_due_time "0", :location_id "", :added "2011-09-06T15:30:30Z", :task-series-id "130259984", :url "", :created "2011-09-06T15:30:30Z", :completed "", :modified "2011-09-06T15:30:30Z", :due "2011-09-06T23:00:00Z", :source "android", :id "202456286", :deleted "", :priority "3"},
@@ -9,5 +11,8 @@
 
 (def nested-map-coll (map (fn [m] {:id (:list-id m), :name (:name m), :data m}) map-coll))
 
+
 ;; TODO: write a test that can sort the map and nested map by priority (or whatever)
 ;; Think it should be fairly simple
+(deftest sort-map
+  (is true))

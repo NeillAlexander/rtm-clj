@@ -78,6 +78,7 @@
   [state frob]
   (if frob
     (do
+      (utils/debug (str "Requesting auth with frob '" frob "'"))
       (if-let [url (api/build-rtm-url state {"perms" "delete", "frob" frob} api/*auth-url-base*)]
         (.browse (java.awt.Desktop/getDesktop) (URI. url)))
       frob)))
@@ -173,6 +174,14 @@
   [state]
   (println state))
 
+(defn- apply-sort-order
+  [state list-id the-list]
+  (if-let [sort-keys (state/get-list-sort-order state list-id)]
+    (do
+      (println (str "Sorting 0 " the-list))
+      (sort (apply utils/make-map-comparator + sort-keys) the-list))
+    the-list))
+
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
@@ -188,7 +197,9 @@
        (if-let [cached-lists (state/cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
            (if-let [tasks (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list)))]
-             (->> (utils/indexify (create-id-map tasks))
+             (->> (apply-sort-order state (:id the-list) tasks)
+                  (create-id-map)
+                  (utils/indexify)
                   (display-id-map (str "List: " (:name the-list)))
                   (cache-id-map :tasks))))))))
 
@@ -267,12 +278,16 @@
   [state & name]
   (api/rtm-lists-add state (str/join " " name)))
 
+(defn- get-list
+  "Gets the list from the cache"
+  [id]
+  ((state/cache-get :lists) (utils/as-int id)))
+
 (defn ^{:cmd "move", :also ["mv"]} move-task
   "Move tasks by id to a list, which will be prompted for."
   [state task-idx & more]
   (display-lists state)
-  (if-let [to-list ((state/cache-get :lists) (utils/as-int
-                                              (utils/prompt! "Move task(s) to which list? " (complement utils/as-int))))]
+  (if-let [to-list (get-list (utils/prompt! "Move task(s) to which list? " (complement utils/as-int)))]
     (loop [tasknum task-idx
            others more]        
       (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
@@ -281,3 +296,18 @@
                                           (api/rtm-tasks-moveTo state (:list-id task) (:id to-list) (:task-series-id task) (:id task))))
           (if (seq others)
             (recur (first others) (rest others))))))))
+
+(defn- set-sort-order
+  [state list-num the-list & keys]
+  (let [state (assoc-in state [:sort-order (:id the-list)] keys)]
+    (state/save-state! state)
+    (display-lists state list-num)))
+
+(defn ^{:cmd "sort", :also ["s"]} sort-list
+  "sort [listnum] [d|p]"
+  [state list-num by]
+  (if-let [the-list (get-list list-num)]
+    (cond
+     (= "d" by) (set-sort-order state list-num the-list :due)
+     (= "p" by) (set-sort-order state list-num the-list :priority)
+     :else (println "Unknown sort order: d = by due date, p = by priority"))))
