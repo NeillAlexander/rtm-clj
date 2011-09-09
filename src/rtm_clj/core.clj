@@ -162,7 +162,7 @@ delegate to the call-cmd"
   "This is repl, if you like, for rtm. Read a command, evaluate it, print the result, loop"
   [state]
   (call state (utils/prompt!))
-  (recur (state/load-state)))
+  (recur (state/cache-get :state)))
 
 ;; Dynamically discover commands
 (defn- discover-commands
@@ -181,7 +181,7 @@ delegate to the call-cmd"
 (defn -main [& args]
   (discover-commands)
   (if-let [state (cmd/login (cmd/init-state))]
-    (cmd-loop (cmd/init-timeline state))
+    (cmd-loop (state/cache-put :state (cmd/init-timeline state)))
     (do
       (println "Login failed")
       (cmd/exit))))

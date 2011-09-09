@@ -153,6 +153,7 @@
 (defn ^{:cmd "exit" :also ["quit"]} exit
   "Exits the application"
   [state]
+  (state/save-state!  state)
   (println "Good-bye")
   (System/exit 1))
 
@@ -300,6 +301,7 @@
 (defn- set-sort-order
   [state list-num the-list & keys]
   (let [state (assoc-in state [:sort-order (:id the-list)] keys)]
+    (state/cache-put :state state)
     (state/save-state! state)
     (display-lists state list-num)))
 

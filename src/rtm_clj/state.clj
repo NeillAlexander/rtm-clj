@@ -50,7 +50,7 @@
   ([state]
      (save-state! *state-file* state))
   ([f state]
-     (spit f state)
+     (spit f (dissoc state :timeline))
      state))
 
 ;; Load the state up again. This is called on startup. Note
