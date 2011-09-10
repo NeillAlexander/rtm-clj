@@ -6,7 +6,8 @@
             [rtm-clj.utils :as utils]
             [rtm-clj.xml :as xml]
             [clojure.string :as str]
-            [swank.swank :as swank])
+            [swank.swank :as swank]
+            [clansi :as clansi])
   (:import [java.net URI]))
 
 (defn- create-id-map
@@ -26,6 +27,22 @@
   (println t)
   (divider))
 
+(def priority-formats
+  {"1" :red, "2" :blue, "3" :cyan})
+
+(defn- colorize
+  [str priority]
+  (if-let [color-key (priority-formats priority)]
+    (clansi/style str color-key :bright)
+    str))
+
+(defn- format-task
+  "Formats the task for display"
+  [name-key item-map]
+  (let [item (val item-map)
+        priority (:priority (:data item))]    
+    (colorize (str (format "%5s" (key item-map)) " - " (name-key item)) priority)))
+
 ;; Display the results. The contract is that the map must be in the following format:
 ;; {0, {:id 123 :name "Inbox"}, 1 {:id 1234 :name "Sent"}}
 (defn- display-id-map
@@ -37,7 +54,7 @@
        (do
          (title heading)
          (doseq [item id-map]
-           (println (str (key item) " - " (name-key (val item)))))
+           (println (format-task name-key item)))
          (divider)
          (println)))
      id-map))

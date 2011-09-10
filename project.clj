@@ -4,6 +4,7 @@
   :dependencies [[org.clojure/clojure "1.2.1"]
                  [clj-http "0.1.3"]
                  [swank-clojure/swank-clojure "1.3.2"]
-                 [clojure-contrib "1.2.0" ]]
+                 [clojure-contrib "1.2.0" ]
+                 [clansi "1.0.0"]]
   :main rtm-clj.core)
 
