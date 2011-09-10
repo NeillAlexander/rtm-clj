@@ -60,3 +60,22 @@ should be + for ascending or - for descending (or something else if you want to 
      (let [selector (apply comp (reverse keys))]    
        (fn [map-a map-b]
          (f (compare (selector map-a) (selector map-b)))))))
+
+(defn make-combined-comparator
+  "Makes a comparator that strings all the provided comparators together. Enables to do multi-level sorting."
+  [comparator & comparators]
+  (fn [x y]
+    (loop [comp-fn comparator
+           remaining comparators]
+      (let [result (comp-fn x y)]
+        (if (= 0 result)
+          (if (seq remaining)
+            (recur (first remaining) (rest remaining))
+            result)
+          result)))))
+
+(defn make-combined-key-comparator
+  "Makes a combined comparator that will sort by each of the keys in order to differentiate."
+  [f & keys]
+  (let [comparators (map #(make-map-comparator f %) keys)]
+    (apply make-combined-comparator comparators)))
