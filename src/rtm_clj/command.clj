@@ -195,9 +195,7 @@
 (defn- apply-sort-order
   [state list-id the-list]
   (if-let [sort-keys (state/get-list-sort-order state list-id)]
-    (do
-      (println (str "Sorting 0 " the-list))
-      (sort (apply utils/make-map-comparator + sort-keys) the-list))
+    (sort (apply utils/make-map-comparator + sort-keys) the-list)
     the-list))
 
 ;; Not only displays the lists, but also stores them away for reference, so user can do
@@ -355,4 +353,5 @@
     (cond
      (= "d" by) (set-sort-order state list-num the-list :due)
      (= "p" by) (set-sort-order state list-num the-list :priority)
-     :else (println "Unknown sort order: d = by due date, p = by priority"))))
+     (= "n" by) (set-sort-order state list-num the-list :name)
+     :else (println "Unknown sort order: d = by due date, n = name, p = by priority"))))
