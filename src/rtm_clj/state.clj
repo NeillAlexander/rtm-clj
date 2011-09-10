@@ -17,7 +17,8 @@
   "Used to store data for the session"
   [key data]
   (utils/debug (str "Storing " key " --> " data))
-  (swap! *cache* assoc key data))
+  (swap! *cache* assoc key data)
+  data)
 
 (defn cache-get
   [key]
