@@ -37,7 +37,7 @@ of the individual words that were entered."
   ([s vf]
      (print s)
      (flush)
-     (let [line (read-line)]
+     (let [line (str/trim (read-line))]
        (if (vf line)
          (recur s vf)
          line))))
