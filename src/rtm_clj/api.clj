@@ -186,12 +186,6 @@ returns nil"
   [state list-id task-series-id task-id]
   (call-task-method "rtm.tasks.complete" state list-id task-series-id task-id))
 
-;; set the priority of a task
-(defn rtm-tasks-setPriority
-  "Note the order is slightly different here, with priority first"
-  [priority state list-id task-series-id task-id]
-  (call-task-method "rtm.tasks.setPriority" state list-id task-series-id task-id "priority" priority))
-
 ;; Create a new list
 (defn rtm-lists-add
   [state name]
@@ -204,3 +198,16 @@ returns nil"
   (call-api-with-token state "rtm.tasks.moveTo"
     {"timeline" (:timeline state), "from_list_id" from-list-id, "to_list_id" to-list-id,
      "taskseries_id" task-series-id, "task_id" task-id}))
+
+;; set the priority of a task
+;; Note the order is slightly different here, with priority first, since this will
+;; be called with partial
+(defn rtm-tasks-setPriority
+  [priority state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.setPriority" state list-id task-series-id task-id
+                    "priority" priority))
+
+(defn rtm-tasks-setName
+  [name state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.setName" state list-id task-series-id task-id
+                    "name" name))

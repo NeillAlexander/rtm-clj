@@ -310,6 +310,17 @@
   [state tasknum & others]
   (apply set-priority "3" state tasknum others))
 
+(defn ^{:cmd "rename", :also ["ren"]} rename-task
+  "Rename a task. rename [id] new-name"
+  [state tasknum & name]
+  (if name
+    (let [new-name (str/join " " name)]
+      (task-command (partial api/rtm-tasks-setName new-name)
+                    (str "Renamed to \"" new-name "\"") state tasknum))
+    (do
+      (println "You must provide a name")
+      (display-last-list state))))
+
 (defn ^{:cmd "undo"} undo
   "Displays undoable actions and allows to undo"
   ([state]
