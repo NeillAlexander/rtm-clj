@@ -156,11 +156,20 @@ returns nil"
   (call-api-with-token state "rtm.tasks.add"
     {"timeline" (:timeline state), "parse" "1", "name" name}))
 
-(defn- call-task-method
-  [method-name state list-id task-series-id task-id]
-  (utils/debug (str method-name " params: list-id = " list-id))
-  (call-api-with-token state method-name
-    {"timeline" (:timeline state), "list_id" list-id, "taskseries_id" task-series-id, "task_id" task-id}))
+(defn- make-params-map
+  [& args]
+  (utils/debug (str "Make params map for: " args))
+  (if (and (seq args) (even? (count args)))
+    (apply assoc {} args)
+    {}))
+
+(defn- call-task-method  
+  [method-name state list-id task-series-id task-id & args]
+  (utils/debug (str "call-task-method: args = " args))
+  (let [additional-params (apply make-params-map args)]
+    (utils/debug (str method-name " params: list-id = " list-id ", additional" additional-params))
+    (call-api-with-token state method-name
+      (into  {"timeline" (:timeline state), "list_id" list-id, "taskseries_id" task-series-id, "task_id" task-id} additional-params))))
 
 ;; Delete a task
 (defn rtm-tasks-delete
@@ -176,6 +185,12 @@ returns nil"
 (defn rtm-tasks-complete
   [state list-id task-series-id task-id]
   (call-task-method "rtm.tasks.complete" state list-id task-series-id task-id))
+
+;; set the priority of a task
+(defn rtm-tasks-setPriority
+  "Note the order is slightly different here, with priority first"
+  [priority state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.setPriority" state list-id task-series-id task-id "priority" priority))
 
 ;; Create a new list
 (defn rtm-lists-add

@@ -243,6 +243,7 @@
 ;; of tasks (e.g. rm, mark as complete etc)
 (defn- task-command
   [f undo-msg state tasknum & others]
+  (utils/debug (str "task-command: tasknum=" tasknum ", others=" others))
   (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
     (do
       (utils/debug (str "task: " task))
@@ -254,12 +255,37 @@
 (defn ^{:cmd "rm", :also ["delete"]} delete-task
   "Delete one or more tasks (by index)."
   [state tasknum & others]
-  (task-command api/rtm-tasks-delete "Deleted" state tasknum others))
+  (apply task-command api/rtm-tasks-delete "Deleted" state tasknum others))
 
 (defn ^{:cmd "complete", :also ["c"]} complete-task
   "Mark one or more tasks as complete (by index)."
   [state tasknum & others]
-  (task-command api/rtm-tasks-complete "Completed" state tasknum others))
+  (apply task-command api/rtm-tasks-complete "Completed" state tasknum others))
+
+;; These are ripe for converting to macros
+(defn- set-priority
+  [priority state tasknum & others]
+  (apply task-command (partial api/rtm-tasks-setPriority priority) (str "Set priority" priority) state tasknum others))
+
+(defn ^{:cmd "p0"} set-priority-0
+  "Sets the priority of a task to 0"
+  [state tasknum & others]
+  (apply set-priority "0" state tasknum others))
+
+(defn ^{:cmd "p1"} set-priority-1
+  "Sets the priority of a task to 1"
+  [state tasknum & others]
+  (apply set-priority "1" state tasknum others))
+
+(defn ^{:cmd "p2"} set-priority-2
+  "Sets the priority of a task to 2"
+  [state tasknum & others]
+  (apply set-priority "2" state tasknum others))
+
+(defn ^{:cmd "p3"} set-priority-3
+  "Sets the priority of a task to 3"
+  [state tasknum & others]
+  (apply set-priority "3" state tasknum others))
 
 (defn ^{:cmd "undo"} undo
   "Displays undoable actions and allows to undo"
