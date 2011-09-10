@@ -213,11 +213,18 @@
        (if-let [cached-lists (state/cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
            (if-let [tasks (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list)))]
-             (->> (apply-sort-order state (:id the-list) tasks)
-                  (create-id-map)
-                  (utils/indexify)
-                  (display-id-map (str "List: " (:name the-list)))
-                  (cache-id-map :tasks))))))))
+             (do
+               (state/cache-put :last-list-num idx)
+               (->> (apply-sort-order state (:id the-list) tasks)
+                    (create-id-map)
+                    (utils/indexify)
+                    (display-id-map (str "List: " (:name the-list)))
+                    (cache-id-map :tasks)))))))))
+
+(defn- display-last-list
+  [state]
+  (if-let [last-list-num (state/cache-get :last-list-num)]
+    (display-lists state last-list-num)))
 
 ;; Command for viewing a particular task
 (defn ^{:cmd "task", :also ["t"], :cache-id :tasks} view-task
@@ -265,7 +272,8 @@
       (utils/debug (cache-if-undoable state (str undo-msg " task \"" (:name task) "\"")
                                       (f state (:list-id task) (:task-series-id task) (:id task))))
       (if (seq others)
-        (recur f undo-msg state (first others) (rest others))))))
+        (recur f undo-msg state (first others) (rest others))
+        (display-last-list state)))))
 
 (defn ^{:cmd "rm", :also ["delete"]} delete-task
   "Delete one or more tasks (by index)."
