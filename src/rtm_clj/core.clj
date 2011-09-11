@@ -181,7 +181,9 @@ delegate to the call-cmd"
 (defn -main [& args]
   (discover-commands)
   (if-let [state (cmd/login (cmd/init-state))]
-    (cmd-loop (state/cache-put :state (cmd/init-timeline state)))
-    (do
-      (println "Login failed")
-      (cmd/exit))))
+    (let [state-with-timeline (state/cache-put :state (cmd/init-timeline state))]
+      (cmd/display-lists state-with-timeline)
+      (cmd-loop state-with-timeline)
+      (do
+        (println "Login failed")
+        (cmd/exit)))))
