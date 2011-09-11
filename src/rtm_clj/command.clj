@@ -290,6 +290,12 @@
   [state tasknum & others]
   (apply task-command api/rtm-tasks-postpone "Postponed" state tasknum others))
 
+(defn ^{:cmd "due"} set-due-date
+  [state tasknum & date]
+  (if (seq date)
+    (task-command (partial api/rtm-tasks-setDueDate (str/join " " date)) "Changed due date" state tasknum)
+    (println "You must provide a date.")))
+
 ;; These are ripe for converting to macros
 (defn- set-priority
   [priority state tasknum & others]

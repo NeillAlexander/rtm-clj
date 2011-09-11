@@ -216,3 +216,8 @@ returns nil"
   [name state list-id task-series-id task-id]
   (call-task-method "rtm.tasks.setName" state list-id task-series-id task-id
                     "name" name))
+
+(defn rtm-tasks-setDueDate
+  [due state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.setDueDate" state list-id task-series-id task-id
+                    "due" due "has_due_time" 1 "parse" 1))
