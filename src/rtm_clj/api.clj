@@ -186,6 +186,11 @@ returns nil"
   [state list-id task-series-id task-id]
   (call-task-method "rtm.tasks.complete" state list-id task-series-id task-id))
 
+;; postpone a task
+(defn rtm-tasks-postpone
+  [state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.postpone" state list-id task-series-id task-id))
+
 ;; Create a new list
 (defn rtm-lists-add
   [state name]

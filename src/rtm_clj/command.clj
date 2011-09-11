@@ -285,6 +285,11 @@
   [state tasknum & others]
   (apply task-command api/rtm-tasks-complete "Completed" state tasknum others))
 
+(defn ^{:cmd "postpone", :also ["pp"]} postpone-task
+  "Mark one or more tasks as postponed"
+  [state tasknum & others]
+  (apply task-command api/rtm-tasks-postpone "Postponed" state tasknum others))
+
 ;; These are ripe for converting to macros
 (defn- set-priority
   [priority state tasknum & others]
