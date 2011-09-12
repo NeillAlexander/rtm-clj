@@ -296,6 +296,12 @@
     (task-command (partial api/rtm-tasks-setDueDate (str/join " " date)) "Changed due date on" state tasknum)
     (println "You must provide a date.")))
 
+(defn ^{:cmd "tag"} add-tags
+  [state tasknum & tags]
+  (if (seq tags)
+    (task-command (partial api/rtm-tasks-addTags tags) "Added tags to" state tasknum)
+    (println "You must specify tags.")))
+
 ;; These are ripe for converting to macros
 (defn- set-priority
   [priority state tasknum & others]

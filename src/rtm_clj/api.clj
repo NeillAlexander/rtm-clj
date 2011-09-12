@@ -5,7 +5,8 @@
   (:require
    [rtm-clj.utils :as utils]
    [rtm-clj.xml :as xml]
-   [clj-http.client :as http])
+   [clj-http.client :as http]
+   [clojure.string :as str])
 
   (:import
    [java.security MessageDigest]
@@ -221,3 +222,9 @@ returns nil"
   [due state list-id task-series-id task-id]
   (call-task-method "rtm.tasks.setDueDate" state list-id task-series-id task-id
                     "due" due "has_due_time" 1 "parse" 1))
+
+(defn rtm-tasks-addTags
+  "Add the tags to the task"
+  [tag-coll state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.addTags" state list-id task-series-id task-id
+                    "tags" (str/join "," tag-coll)))
