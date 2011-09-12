@@ -228,3 +228,9 @@ returns nil"
   [tag-coll state list-id task-series-id task-id]
   (call-task-method "rtm.tasks.addTags" state list-id task-series-id task-id
                     "tags" (str/join "," tag-coll)))
+
+(defn rtm-tasks-removeTags
+  "Remove the tags from the task"
+  [tag-coll state list-id task-series-id task-id]
+  (call-task-method "rtm.tasks.removeTags" state list-id task-series-id task-id
+                    "tags" (str/join "," tag-coll)))

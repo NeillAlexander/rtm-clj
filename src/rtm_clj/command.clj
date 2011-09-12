@@ -302,6 +302,12 @@
     (task-command (partial api/rtm-tasks-addTags tags) "Added tags to" state tasknum)
     (println "You must specify tags.")))
 
+(defn ^{:cmd "rmtag"} remove-tags
+  [state tasknum & tags]
+  (if (seq tags)
+    (task-command (partial api/rtm-tasks-removeTags tags) "Removed tags to" state tasknum)
+    (println "You must specify tags.")))
+
 ;; These are ripe for converting to macros
 (defn- set-priority
   [priority state tasknum & others]
