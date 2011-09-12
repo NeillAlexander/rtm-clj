@@ -198,6 +198,23 @@
     (sort (apply utils/make-combined-key-comparator + sort-keys) the-list)
     the-list))
 
+(defn- handle-get-list-response
+  "Caches the response and displays the tasks"
+  [state tasks title sort-key]
+  (->> (apply-sort-order state sort-key tasks)
+       (create-id-map)
+       (utils/indexify)
+       (display-id-map (str "List: " title))
+       (cache-id-map :tasks)))
+
+(defn ^{:cmd "search"} search
+  "Search using the RTM search queries"
+  [state & query-params]
+  (if (seq query-params)
+    (if-let [tasks (xml/parse-task-series-response (apply api/rtm-search state query-params))]
+      (handle-get-list-response state tasks (str/join " " query-params) nil))
+    (println "Nothing to search for.")))
+
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
@@ -215,11 +232,7 @@
            (if-let [tasks (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list)))]
              (do
                (state/cache-put :last-list-num idx)
-               (->> (apply-sort-order state (:id the-list) tasks)
-                    (create-id-map)
-                    (utils/indexify)
-                    (display-id-map (str "List: " (:name the-list)))
-                    (cache-id-map :tasks)))))))))
+               (handle-get-list-response state tasks (:name the-list) (:id the-list)))))))))
 
 (defn- display-last-list
   [state]

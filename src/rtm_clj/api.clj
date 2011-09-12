@@ -145,6 +145,10 @@ returns nil"
   ([state list-id list-filter]
      (call-api-with-token state "rtm.tasks.getList" {"list_id" list-id, "filter" list-filter})))
 
+(defn rtm-search
+  [state & search-filter]
+  (call-api-with-token state "rtm.tasks.getList" {"filter" (str/join " " search-filter)}))
+
 ;; Timeline is required for any write tasks
 (defn rtm-timelines-create
   [state]
