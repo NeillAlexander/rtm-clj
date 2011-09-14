@@ -407,3 +407,14 @@
   (if-let [the-list (get-list list-num)]
     (let [sort-keys (map keyword (filter #{"due" "priority" "name"} keys))]
       (apply set-sort-order state list-num the-list sort-keys))))
+
+;; I use this pattern in a few different places. Could abstract out?
+(defn ^{:cmd "hide"} hide-list
+  "Hides a list, by list number"
+  ([state]
+     (println "Ready to display all hidden lists"))
+  ([state listnum & more-listnums]
+     (if-let [the-list (get-list listnum)]
+       (state/save-state! (state/cache-put :state (state/hide-list state (:id the-list)))))
+     (if (seq more-listnums)
+       (recur state (first more-listnums) (rest more-listnums)))))

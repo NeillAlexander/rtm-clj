@@ -85,3 +85,21 @@
   (if-let [sort-order-map (:sort-order state)]
     (sort-order-map list-id)
     nil))
+
+(defn hide-list
+  "Helper method to store the list number away as hidden."
+  [state list-num]
+  (let [hidden (if (:hidden state) (:hidden state) #{})]    
+    (assoc state :hidden (conj hidden list-num))))
+
+(defn list-hidden?
+  "Determine if the list is hidden currently."
+  [state list-num]
+  (if (:hidden state)
+    ((:hidden state) list-num)))
+
+(defn unhide-list
+  "Opposite of hide"
+  [state list-num]
+  (if (:hidden state)
+    (assoc state :hidden (disj (:hidden state) list-num))))
