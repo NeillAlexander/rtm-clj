@@ -221,10 +221,12 @@
 (defn ^{:cmd "list", :also ["ls" "l"], :cache-id :lists} display-lists
   "Displays all the lists or all the tasks for the selected list"
   ([state]
-     (if-let [lists (get-lists state)]
-       (->> (utils/indexify (create-id-map lists))
-            (display-id-map "Lists")
-            (cache-id-map :lists))))
+     (letfn [(not-hidden? [l]
+               (not (state/list-hidden? state (:id l))))]
+       (if-let [lists (get-lists state)]
+         (->> (utils/indexify (create-id-map (filter not-hidden? lists)))
+              (display-id-map "Lists")
+              (cache-id-map :lists)))))
   ([state i]
      (let [idx (utils/as-int i)]
        (if-let [cached-lists (state/cache-get :lists)]
