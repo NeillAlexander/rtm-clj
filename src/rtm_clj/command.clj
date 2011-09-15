@@ -414,14 +414,22 @@
     (let [sort-keys (map keyword (filter #{"due" "priority" "name"} keys))]
       (apply set-sort-order state list-num the-list sort-keys))))
 
+(defn- do-hide-action
+  [state f listnum & more-listnums]
+  (if-let [the-list (get-list listnum)]
+    (let [new-state (state/save-state! (state/cache-put :state (f state (:id the-list))))]
+      (if (seq more-listnums)
+        (recur new-state f (first more-listnums) (rest more-listnums))))))
+
 ;; I use this pattern in a few different places. Could abstract out?
-(defn ^{:cmd "hide"} hide-list
+(defn ^{:cmd "hide", :also ["hidden"]} hide-list
   "Hides a list, by list number"
   ([state]
      (letfn [(hidden? [l] (state/list-hidden? state (:id l)))]
        (do-display-lists state "Hidden Lists" hidden?)))
   ([state listnum & more-listnums]
-     (if-let [the-list (get-list listnum)]
-       (state/save-state! (state/cache-put :state (state/hide-list state (:id the-list)))))
-     (if (seq more-listnums)
-       (recur state (first more-listnums) (rest more-listnums)))))
+     (apply do-hide-action state state/hide-list listnum more-listnums)))
+
+(defn ^{:cmd "unhide"} unhide-list
+  [state listnum & more-listnums]
+  (apply do-hide-action state state/unhide-list listnum more-listnums))
