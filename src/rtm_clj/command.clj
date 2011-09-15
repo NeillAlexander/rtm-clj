@@ -215,6 +215,13 @@
       (handle-get-list-response state tasks (str/join " " query-params) nil))
     (println "Nothing to search for.")))
 
+(defn- do-display-lists
+  [state title pred]
+  (if-let [lists (get-lists state)]
+         (->> (utils/indexify (create-id-map (filter pred lists)))
+              (display-id-map title)
+              (cache-id-map :lists))))
+
 ;; Not only displays the lists, but also stores them away for reference, so user can do
 ;; list 0
 ;; to display all the tasks in list 0
@@ -223,10 +230,7 @@
   ([state]
      (letfn [(not-hidden? [l]
                (not (state/list-hidden? state (:id l))))]
-       (if-let [lists (get-lists state)]
-         (->> (utils/indexify (create-id-map (filter not-hidden? lists)))
-              (display-id-map "Lists")
-              (cache-id-map :lists)))))
+       (do-display-lists state "Lists" not-hidden?)))
   ([state i]
      (let [idx (utils/as-int i)]
        (if-let [cached-lists (state/cache-get :lists)]
@@ -414,7 +418,8 @@
 (defn ^{:cmd "hide"} hide-list
   "Hides a list, by list number"
   ([state]
-     (println "Ready to display all hidden lists"))
+     (letfn [(hidden? [l] (state/list-hidden? state (:id l)))]
+       (do-display-lists state "Hidden Lists" hidden?)))
   ([state listnum & more-listnums]
      (if-let [the-list (get-list listnum)]
        (state/save-state! (state/cache-put :state (state/hide-list state (:id the-list)))))
