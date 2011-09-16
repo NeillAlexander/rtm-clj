@@ -34,13 +34,22 @@ Associates the attribute into the map using the attribute from the xml as the va
 
 (defn- create-note-map
   [loc]
-  (assoc-attributes {} loc :id :created :modified :title))
+  (assoc (assoc-attributes {} loc :id :created :modified :title) :text (zfx/text loc)))
 
 (defn- extract-notes
   "Assocs the notes into the map."
   [m task-series-loc]
   (let [notes (map create-note-map (zfx/xml-> task-series-loc :notes :note))]
     (assoc m :notes notes)))
+
+(defn- create-tag-map
+  [loc]
+  (zfx/text loc))
+
+(defn- extract-tags
+  [m task-series-loc]
+  (let [tags (map create-tag-map (zfx/xml-> task-series-loc :tags :tag))]
+    (assoc m :tags tags)))
 
 (defn- create-task-map
   "Creates a flat map of the key attributes from the xml, representing a task."
@@ -53,6 +62,7 @@ Associates the attribute into the map using the attribute from the xml as the va
               (assoc-attributes task-loc :id :due :has_due_time :added :completed
                                 :deleted :priority :postponed :estimate)
               (extract-notes task-series-loc)
+              (extract-tags task-series-loc)
               (assoc :list-id (zfx/xml1-> (zip/up task-series-loc) (zfx/attr :id))))]
       (utils/debug (str "task-map: " task-map))
       task-map)))

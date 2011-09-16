@@ -68,15 +68,25 @@
   (state/cache-put :last cache-id)
   id-map)
 
+(defn- print-if-not-empty [text data]
+  (if-not (or (nil? data) (empty? data))
+    (println (str text data))))
+
 (defn- display-task
   [task-data]
   (utils/debug (str "Task data:" task-data))
   (title (str "Task: " (:name task-data)))
-  (println (str "Created: " (:created task-data)))
-  (println (str "Due: " (:due task-data)))
-  (println (str "URL: " (:url task-data)))
+  (print-if-not-empty "Due: " (:due task-data))
+  (print-if-not-empty "URL: " (:url task-data))
   (doseq [note (flatten (:notes task-data))]
-    (println (str "Note: " (:title note))))
+    (println (str "Note: " (:title note)))
+    (println (:text note)))
+  (if-not (empty? (:tags task-data))
+    (do
+      (print "Tags: ")
+      (doseq [tag (:tags task-data)]
+        (print (str tag " ")))
+      (println)))
   (divider)
   (println))
 
