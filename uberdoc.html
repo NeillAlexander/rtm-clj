@@ -2527,7 +2527,7 @@ $(document).ready(function() {
 
 })
 </script><title>rtm-clj -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">rtm-clj</h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br /><p>A command line interface for Remember the Milk.</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.2.1</td></tr><tr><td class="dep-name">clj-http</td><td class="dotted"><hr /></td><td class="dep-version">0.1.3</td></tr><tr><td class="dep-name">swank-clojure/swank-clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.3.2</td></tr><tr><td class="dep-name">clojure-contrib</td><td class="dotted"><hr /></td><td class="dep-version">1.2.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.6.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#rtm-clj.xml">rtm-clj.xml</a></li><li><a href="#rtm-clj.api">rtm-clj.api</a></li><li><a href="#rtm-clj.state">rtm-clj.state</a></li><li><a href="#rtm-clj.utils">rtm-clj.utils</a></li><li><a href="#rtm-clj.command">rtm-clj.command</a></li><li><a href="#rtm-clj.core">rtm-clj.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.xml" name="rtm-clj.xml"><h1 class="project-name">rtm-clj.xml</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.2.1</td></tr><tr><td class="dep-name">clj-http</td><td class="dotted"><hr /></td><td class="dep-version">0.1.3</td></tr><tr><td class="dep-name">swank-clojure/swank-clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.3.2</td></tr><tr><td class="dep-name">clojure-contrib</td><td class="dotted"><hr /></td><td class="dep-version">1.2.0</td></tr><tr><td class="dep-name">clansi</td><td class="dotted"><hr /></td><td class="dep-version">1.0.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.6.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#rtm-clj.xml">rtm-clj.xml</a></li><li><a href="#rtm-clj.api">rtm-clj.api</a></li><li><a href="#rtm-clj.state">rtm-clj.state</a></li><li><a href="#rtm-clj.utils">rtm-clj.utils</a></li><li><a href="#rtm-clj.command">rtm-clj.command</a></li><li><a href="#rtm-clj.core">rtm-clj.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.xml" name="rtm-clj.xml"><h1 class="project-name">rtm-clj.xml</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.xml
   (:require [rtm-clj.utils :as utils]
    [clojure.xml :as xml]
@@ -2559,11 +2559,18 @@ Associates the attribute into the map using the attribute from the xml as the va
       new-m)))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn- create-note-map
   [loc]
-  (assoc-attributes {} loc :id :created :modified :title))</pre></tr><tr><td class="docs"><p>Assocs the notes into the map.</p>
+  (assoc (assoc-attributes {} loc :id :created :modified :title) :text (zfx/text loc)))</pre></tr><tr><td class="docs"><p>Assocs the notes into the map.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- extract-notes
   [m task-series-loc]
   (let [notes (map create-note-map (zfx/xml-&gt; task-series-loc :notes :note))]
-    (assoc m :notes notes)))</pre></tr><tr><td class="docs"><p>Creates a flat map of the key attributes from the xml, representing a task.</p>
+    (assoc m :notes notes)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- create-tag-map
+  [loc]
+  (zfx/text loc))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- extract-tags
+  [m task-series-loc]
+  (let [tags (map create-tag-map (zfx/xml-&gt; task-series-loc :tags :tag))]
+    (assoc m :tags tags)))</pre></tr><tr><td class="docs"><p>Creates a flat map of the key attributes from the xml, representing a task.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- create-task-map
   [task-loc]
   (let [task-series-loc (zip/up task-loc)]
@@ -2574,6 +2581,7 @@ Associates the attribute into the map using the attribute from the xml as the va
               (assoc-attributes task-loc :id :due :has_due_time :added :completed
                                 :deleted :priority :postponed :estimate)
               (extract-notes task-series-loc)
+              (extract-tags task-series-loc)
               (assoc :list-id (zfx/xml1-&gt; (zip/up task-series-loc) (zfx/attr :id))))]
       (utils/debug (str &quot;task-map: &quot; task-map))
       task-map)))</pre></tr><tr><td class="docs"><p>Creates a flat map of the key task series data. Path specifies the zip-filter path
@@ -2597,13 +2605,22 @@ to the task tag</p>
     (if (= &quot;fail&quot; stat)
       (let [err-loc (zfx/xml1-&gt; zipped :err)]
         (assoc-attributes {} err-loc :code :msg))
-      nil)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.api" name="rtm-clj.api"><h1 class="project-name">rtm-clj.api</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This contains the functions that actually call the Remember the Milk API.
+      nil)))</pre></tr><tr><td class="docs"><p>Returns a map with the details for the undo, or nil if not undoable.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn parse-undoable
+  [xml timeline]
+  (if-let [transaction (zfx/xml1-&gt; (zip/xml-zip (to-xml xml)) :transaction)]
+    (let [undoable (zfx/xml1-&gt; transaction (zfx/attr :undoable))]
+      (if (= &quot;1&quot; undoable)
+        {:transaction-id (zfx/xml1-&gt; transaction (zfx/attr :id)),
+         :timeline timeline}
+        nil))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.api" name="rtm-clj.api"><h1 class="project-name">rtm-clj.api</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This contains the functions that actually call the Remember the Milk API.
 The API is REST based, so it uses clj-http.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.api
   (:require
    [rtm-clj.utils :as utils]
    [rtm-clj.xml :as xml]
-   [clj-http.client :as http])
+   [clj-http.client :as http]
+   [clojure.string :as str])
   (:import
    [java.security MessageDigest]
    [java.net URLEncoder]))</pre></tr><tr><td class="docs"><h1>Constants</h1>
@@ -2619,7 +2636,7 @@ The API is REST based, so it uses clj-http.</p>
        (apply str (interpose param-separator coded)))))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn- md5sum
   [s]
-  (.toString (BigInteger. 1 (.digest (MessageDigest/getInstance &quot;MD5&quot;) (.getBytes s))) 16))</pre></tr><tr><td class="docs"><p>Building up the vocabulary...</p>
+  (format &quot;%1$032x&quot; (BigInteger. 1 (.digest (MessageDigest/getInstance &quot;MD5&quot;) (.getBytes s)))))</pre></tr><tr><td class="docs"><p>Building up the vocabulary...</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn shared-secret-set?
   [state]
   (not (empty? (:shared-secret state))))</pre></tr><tr><td class="docs">
@@ -2631,24 +2648,29 @@ documentation.</p>
   &quot;This does the signing that RTM api requires&quot;
   [state param-map]
   (if (shared-secret-set? state)
-    (let [sorted-map (sort param-map)]
-      (utils/debug (str &quot;Signature map: &quot; sorted-map))
-      (md5sum (str (:shared-secret state) (build-params sorted-map   false))))))</pre></tr><tr><td class="docs"><p>Builds the url, with the api and signature parameters correctly applied.</p>
+    (let [sorted-map (sort param-map)
+          sig-string (str (:shared-secret state) (build-params sorted-map   false))]
+      (utils/debug (str &quot;Signature string: &quot; sig-string))
+      (md5sum sig-string))))</pre></tr><tr><td class="docs"><p>Builds the url, with the api and signature parameters correctly applied.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn build-rtm-url
   &quot;Builds the url to hit the rest service&quot;
   ([state param-map]
      (build-rtm-url state param-map *api-url*))
   ([state param-map base-url]
+     (utils/debug (str &quot;Building url: &quot; param-map base-url))
      (let [all-params (assoc param-map &quot;api_key&quot; (:api-key state))
            api-sig (sign-params state all-params)
            url (str base-url (build-params all-params) &quot;&amp;api_sig=&quot; api-sig)]
        (utils/debug url)
-       url)))</pre></tr><tr><td class="docs">
+       url)))</pre></tr><tr><td class="docs"><p>This should probably work differently. Doesn't really make sense for a general
+api call, only in context of the command line.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- check-for-error
+  &quot;A bit ugly, but it at least logs an error if the api call failed.&quot;
   [response-xml]
   (if-let [error (xml/parse-error response-xml)]
     (do
-      (println (str &quot;Error: &quot; (:msg error))))
+      (println (str &quot;Error: &quot; (:msg error)))
+      nil)
     response-xml))</pre></tr><tr><td class="docs"><p>Abstracts out the the REST call.
 method is the name of the RTM method.
 The param-map contains the key/value pairs for the http request params.</p>
@@ -2704,7 +2726,10 @@ NB: it only returns a sub-set of the data currently. I may add more in as I go a
   ([state list-id]
      (rtm-tasks-getList state list-id &quot;status:incomplete&quot;))
   ([state list-id list-filter]
-     (call-api-with-token state &quot;rtm.tasks.getList&quot; {&quot;list_id&quot; list-id, &quot;filter&quot; list-filter})))</pre></tr><tr><td class="docs"><p>Timeline is required for any write tasks</p>
+     (call-api-with-token state &quot;rtm.tasks.getList&quot; {&quot;list_id&quot; list-id, &quot;filter&quot; list-filter})))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-search
+  [state &amp; search-filter]
+  (call-api-with-token state &quot;rtm.tasks.getList&quot; {&quot;filter&quot; (str/join &quot; &quot; search-filter)}))</pre></tr><tr><td class="docs"><p>Timeline is required for any write tasks</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-timelines-create
   [state]
   (call-api-with-token state &quot;rtm.timelines.create&quot;))</pre></tr><tr><td class="docs"><p>Add a task</p>
@@ -2712,22 +2737,78 @@ NB: it only returns a sub-set of the data currently. I may add more in as I go a
   &quot;Create and add a new task using smart add. The task is added to the inbox.&quot;
   [state name]
   (call-api-with-token state &quot;rtm.tasks.add&quot;
-    {&quot;timeline&quot; (:timeline state), &quot;parse&quot; &quot;1&quot;, &quot;name&quot; name}))</pre></tr><tr><td class="docs"><p>Delete a task</p>
+    {&quot;timeline&quot; (:timeline state), &quot;parse&quot; &quot;1&quot;, &quot;name&quot; name}))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- make-params-map
+  [&amp; args]
+  (utils/debug (str &quot;Make params map for: &quot; args))
+  (if (and (seq args) (even? (count args)))
+    (apply assoc {} args)
+    {}))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- call-task-method  
+  [method-name state list-id task-series-id task-id &amp; args]
+  (utils/debug (str &quot;call-task-method: args = &quot; args))
+  (let [additional-params (apply make-params-map args)]
+    (utils/debug (str method-name &quot; params: list-id = &quot; list-id &quot;, additional&quot; additional-params))
+    (call-api-with-token state method-name
+      (into  {&quot;timeline&quot; (:timeline state), &quot;list_id&quot; list-id, &quot;taskseries_id&quot; task-series-id, &quot;task_id&quot; task-id} additional-params))))</pre></tr><tr><td class="docs"><p>Delete a task</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-delete
   [state list-id task-series-id task-id]
-  (utils/debug (str &quot;Delete params: list-id = &quot; list-id))
-  (call-api-with-token state &quot;rtm.tasks.delete&quot;
-    {&quot;timeline&quot; (:timeline state), &quot;list_id&quot; list-id, &quot;taskseries_id&quot; task-series-id, &quot;task_id&quot; task-id}))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.state" name="rtm-clj.state"><h1 class="project-name">rtm-clj.state</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Contains the mutable stuff, and also the non-mutable state
+  (call-task-method &quot;rtm.tasks.delete&quot; state list-id task-series-id task-id))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-transactions-undo
+  [state timeline transaction-id]
+  (call-api-with-token state &quot;rtm.transactions.undo&quot;
+    {&quot;timeline&quot; timeline, &quot;transaction_id&quot; transaction-id}))</pre></tr><tr><td class="docs"><p>mark as task as complete</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-complete
+  [state list-id task-series-id task-id]
+  (call-task-method &quot;rtm.tasks.complete&quot; state list-id task-series-id task-id))</pre></tr><tr><td class="docs"><p>postpone a task</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-postpone
+  [state list-id task-series-id task-id]
+  (call-task-method &quot;rtm.tasks.postpone&quot; state list-id task-series-id task-id))</pre></tr><tr><td class="docs"><p>Create a new list</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-lists-add
+  [state name]
+  (call-api-with-token state &quot;rtm.lists.add&quot;
+    {&quot;timeline&quot; (:timeline state), &quot;name&quot; name}))</pre></tr><tr><td class="docs"><p>Move task to list</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-moveTo
+  [state from-list-id to-list-id task-series-id task-id]
+  (call-api-with-token state &quot;rtm.tasks.moveTo&quot;
+    {&quot;timeline&quot; (:timeline state), &quot;from_list_id&quot; from-list-id, &quot;to_list_id&quot; to-list-id,
+     &quot;taskseries_id&quot; task-series-id, &quot;task_id&quot; task-id}))</pre></tr><tr><td class="docs"><p>set the priority of a task
+Note the order is slightly different here, with priority first, since this will
+be called with partial</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-setPriority
+  [priority state list-id task-series-id task-id]
+  (call-task-method &quot;rtm.tasks.setPriority&quot; state list-id task-series-id task-id
+                    &quot;priority&quot; priority))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-setName
+  [name state list-id task-series-id task-id]
+  (call-task-method &quot;rtm.tasks.setName&quot; state list-id task-series-id task-id
+                    &quot;name&quot; name))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-setDueDate
+  [due state list-id task-series-id task-id]
+  (call-task-method &quot;rtm.tasks.setDueDate&quot; state list-id task-series-id task-id
+                    &quot;due&quot; due &quot;has_due_time&quot; 1 &quot;parse&quot; 1))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-addTags
+  &quot;Add the tags to the task&quot;
+  [tag-coll state list-id task-series-id task-id]
+  (call-task-method &quot;rtm.tasks.addTags&quot; state list-id task-series-id task-id
+                    &quot;tags&quot; (str/join &quot;,&quot; tag-coll)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn rtm-tasks-removeTags
+  &quot;Remove the tags from the task&quot;
+  [tag-coll state list-id task-series-id task-id]
+  (call-task-method &quot;rtm.tasks.removeTags&quot; state list-id task-series-id task-id
+                    &quot;tags&quot; (str/join &quot;,&quot; tag-coll)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.state" name="rtm-clj.state"><h1 class="project-name">rtm-clj.state</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Contains the mutable stuff, and also the non-mutable state
 (if that makes sense)</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.state
   (:require [rtm-clj.utils :as utils]))</pre></tr><tr><td class="docs"><p>At some point I may make this configurable. This is where the
 state is stored.</p>
-</td><td class="codes" /><pre class="brush: clojure">(def *state-file* (str (System/getenv &quot;HOME&quot;) &quot;/.rtm-clj&quot;))</pre></tr><tr><td class="docs"><p>This is the cache for the session</p>
+</td><td class="codes" /><pre class="brush: clojure">(def *state-file* (str (System/getenv &quot;HOME&quot;) &quot;/.rtm-clj&quot;))</pre></tr><tr><td class="docs"><p>This stores all the undoable tasks</p>
+</td><td class="codes" /><pre class="brush: clojure">(def *undoables* (atom ()))</pre></tr><tr><td class="docs"><p>This is the cache for the session</p>
 </td><td class="codes" /><pre class="brush: clojure">(def *cache* (atom {}))</pre></tr><tr><td class="docs"><p>Used to store data for the session</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn cache-put
   [key data]
   (utils/debug (str &quot;Storing &quot; key &quot; --&gt; &quot; data))
-  (swap! *cache* assoc key data))</pre></tr><tr><td class="docs">
+  (swap! *cache* assoc key data)
+  data)</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn cache-get
   [key]
   (@*cache* key))</pre></tr><tr><td class="docs"><p>Creates a new state map</p>
@@ -2753,7 +2834,7 @@ state is stored.</p>
   ([state]
      (save-state! *state-file* state))
   ([f state]
-     (spit f state)
+     (spit f (dissoc state :timeline))
      state))</pre></tr><tr><td class="docs"><p>Tries to set up the api key and shared secret from a file</p>
 
 <p>Load the state up again. This is called on startup. Note
@@ -2766,7 +2847,32 @@ the current state.</p>
      (try
        (read-string (slurp f))       
        (catch Exception e
-         (new-state)))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.utils" name="rtm-clj.utils"><h1 class="project-name">rtm-clj.utils</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+         (new-state)))))</pre></tr><tr><td class="docs"><p>stores it away for future reference</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn store-undoable
+  [m]
+  (swap! *undoables* conj m))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn remove-undoable
+  [idx]
+  (utils/debug (str &quot;Removing undoable: &quot; idx))
+  (swap! *undoables* #(apply list (vals (dissoc  (utils/indexify %) idx)))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn undoables [] @*undoables*)</pre></tr><tr><td class="docs"><p>Retrieves the sort order for the list from the state or nil if none</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn get-list-sort-order
+  [state list-id]
+  (if-let [sort-order-map (:sort-order state)]
+    (sort-order-map list-id)
+    nil))</pre></tr><tr><td class="docs"><p>Helper method to store the list number away as hidden.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn hide-list
+  [state list-num]
+  (let [hidden (if (:hidden state) (:hidden state) #{})]    
+    (assoc state :hidden (conj hidden list-num))))</pre></tr><tr><td class="docs"><p>Determine if the list is hidden currently.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn list-hidden?
+  [state list-num]
+  (if (:hidden state)
+    ((:hidden state) list-num)))</pre></tr><tr><td class="docs"><p>Opposite of hide</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn unhide-list
+  [state list-num]
+  (if (:hidden state)
+    (assoc state :hidden (disj (:hidden state) list-num))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.utils" name="rtm-clj.utils"><h1 class="project-name">rtm-clj.utils</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.utils
   (:require [clojure.string :as str]))</pre></tr><tr><td class="docs"><p>utility functions</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmulti as-int class)</pre></tr><tr><td class="docs">
@@ -2799,7 +2905,7 @@ make it more general.</p>
   ([s vf]
      (print s)
      (flush)
-     (let [line (read-line)]
+     (let [line (str/trim (read-line))]
        (if (vf line)
          (recur s vf)
          line))))</pre></tr><tr><td class="docs">
@@ -2810,7 +2916,28 @@ make it more general.</p>
   (when @*debug-on*
     (do
       (println)
-      (println s))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.command" name="rtm-clj.command"><h1 class="project-name">rtm-clj.command</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This layer sits on top of the api layer and provides the higher level commands
+      (println s))))</pre></tr><tr><td class="docs"><p>Makes a comparator that can compare values determined by the keys. adaptor is applied to the result of the comparator,
+should be + for ascending or - for descending (or something else if you want to be funky!)</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn make-map-comparator
+  ([f &amp; keys]
+     (let [selector (apply comp (reverse keys))]    
+       (fn [map-a map-b]
+         (f (compare (selector map-a) (selector map-b)))))))</pre></tr><tr><td class="docs"><p>Makes a comparator that strings all the provided comparators together. Enables to do multi-level sorting.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn make-combined-comparator
+  [comparator &amp; comparators]
+  (fn [x y]
+    (loop [comp-fn comparator
+           remaining comparators]
+      (let [result (comp-fn x y)]
+        (if (= 0 result)
+          (if (seq remaining)
+            (recur (first remaining) (rest remaining))
+            result)
+          result)))))</pre></tr><tr><td class="docs"><p>Makes a combined comparator that will sort by each of the keys in order to differentiate.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn make-combined-key-comparator
+  [f &amp; keys]
+  (let [comparators (map #(make-map-comparator f %) keys)]
+    (apply make-combined-comparator comparators)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.command" name="rtm-clj.command"><h1 class="project-name">rtm-clj.command</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>This layer sits on top of the api layer and provides the higher level commands
 for the app.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.command
   (:require [rtm-clj.api :as api]
@@ -2818,7 +2945,8 @@ for the app.</p>
             [rtm-clj.utils :as utils]
             [rtm-clj.xml :as xml]
             [clojure.string :as str]
-            [swank.swank :as swank])
+            [swank.swank :as swank]
+            [clansi :as clansi])
   (:import [java.net URI]))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn- create-id-map
   &quot;Creates the map that is used to output the lists, tasks etc&quot;
@@ -2833,20 +2961,34 @@ for the app.</p>
   (println)
   (divider)
   (println t)
-  (divider))</pre></tr><tr><td class="docs"><p>Display the results. The contract is that the map must be in the following format:
+  (divider))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(def priority-formats
+  {&quot;1&quot; :red, &quot;2&quot; :blue, &quot;3&quot; :cyan})</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- colorize
+  [str priority]
+  (if-let [color-key (priority-formats priority)]
+    (clansi/style str color-key :bright)
+    str))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- format-task
+  &quot;Formats the task for display&quot;
+  [name-key item-map]
+  (let [item (val item-map)
+        priority (:priority (:data item))]    
+    (colorize (str (format &quot;%5s&quot; (key item-map)) &quot; - &quot; (name-key item)) priority)))</pre></tr><tr><td class="docs"><p>Display the results. The contract is that the map must be in the following format:
 {0, {:id 123 :name "Inbox"}, 1 {:id 1234 :name "Sent"}}</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- display-id-map
-  &quot;Requires map in format: id, {:id id :name name}&quot;  
-  [heading id-map]
-  (if (not (zero? (count id-map)))
-    (do
-      (title heading)
-      (doseq [item id-map]
-        (println (str (key item) &quot; - &quot; (:name (val item)))))
-      (divider)
-      (println))
-    (println &quot;None&quot;))
-  id-map)</pre></tr><tr><td class="docs"><p>The map is cached using the provided key for future lookup.
+  &quot;Requires map in format: id, {:id id :name name}&quot;
+  ([heading id-map]
+     (display-id-map heading :name id-map))
+  ([heading name-key id-map]
+     (if (not (zero? (count id-map)))
+       (do
+         (title heading)
+         (doseq [item id-map]
+           (println (format-task name-key item)))
+         (divider)
+         (println)))
+     id-map))</pre></tr><tr><td class="docs"><p>The map is cached using the provided key for future lookup.
 That is the mechanism for storing data in the session.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- cache-id-map
   &quot;Requires map in format: id, {:id id :name name}&quot;
@@ -2854,15 +2996,24 @@ That is the mechanism for storing data in the session.</p>
   (state/cache-put cache-id id-map)
   (state/cache-put :last cache-id)
   id-map)</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- print-if-not-empty [text data]
+  (if-not (or (nil? data) (empty? data))
+    (println (str text data))))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn- display-task
   [task-data]
   (utils/debug (str &quot;Task data:&quot; task-data))
   (title (str &quot;Task: &quot; (:name task-data)))
-  (println (str &quot;Created: &quot; (:created task-data)))
-  (println (str &quot;Due: &quot; (:due task-data)))
-  (println (str &quot;URL: &quot; (:url task-data)))
+  (print-if-not-empty &quot;Due: &quot; (:due task-data))
+  (print-if-not-empty &quot;URL: &quot; (:url task-data))
   (doseq [note (flatten (:notes task-data))]
-    (println (str &quot;Note: &quot; (:title note))))
+    (println (str &quot;Note: &quot; (:title note)))
+    (println (:text note)))
+  (if-not (empty? (:tags task-data))
+    (do
+      (print &quot;Tags: &quot;)
+      (doseq [tag (:tags task-data)]
+        (print (str tag &quot; &quot;)))
+      (println)))
   (divider)
   (println))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(defn get-lists
@@ -2878,6 +3029,7 @@ browser. Returns the frob.</p>
   [state frob]
   (if frob
     (do
+      (utils/debug (str &quot;Requesting auth with frob '&quot; frob &quot;'&quot;))
       (if-let [url (api/build-rtm-url state {&quot;perms&quot; &quot;delete&quot;, &quot;frob&quot; frob} api/*auth-url-base*)]
         (.browse (java.awt.Desktop/getDesktop) (URI. url)))
       frob)))</pre></tr><tr><td class="docs">
@@ -2941,6 +3093,7 @@ Note that for the function to be picked up as a command, it must have the
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;exit&quot; :also [&quot;quit&quot;]} exit
   &quot;Exits the application&quot;
   [state]
+  (state/save-state!  state)
   (println &quot;Good-bye&quot;)
   (System/exit 1))</pre></tr><tr><td class="docs"><p>Start a repl to connect to from Slime</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;swank&quot; :also [&quot;repl&quot;]} start-swank
@@ -2956,24 +3109,53 @@ Note that for the function to be picked up as a command, it must have the
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;state&quot;} state
   &quot;Echos out the current state&quot;
   [state]
-  (println state))</pre></tr><tr><td class="docs"><p>Not only displays the lists, but also stores them away for reference, so user can do
+  (println state))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- apply-sort-order
+  [state list-id the-list]
+  (if-let [sort-keys (state/get-list-sort-order state list-id)]
+    (sort (apply utils/make-combined-key-comparator + sort-keys) the-list)
+    the-list))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- handle-get-list-response
+  &quot;Caches the response and displays the tasks&quot;
+  [state tasks title sort-key]
+  (-&gt;&gt; (apply-sort-order state sort-key tasks)
+       (create-id-map)
+       (utils/indexify)
+       (display-id-map (str &quot;List: &quot; title))
+       (cache-id-map :tasks)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;search&quot;} search
+  &quot;Search using the RTM search queries&quot;
+  [state &amp; query-params]
+  (if (seq query-params)
+    (if-let [tasks (xml/parse-task-series-response (apply api/rtm-search state query-params))]
+      (handle-get-list-response state tasks (str/join &quot; &quot; query-params) nil))
+    (println &quot;Nothing to search for.&quot;)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- do-display-lists
+  [state title pred]
+  (if-let [lists (get-lists state)]
+         (-&gt;&gt; (utils/indexify (create-id-map (filter pred lists)))
+              (display-id-map title)
+              (cache-id-map :lists))))</pre></tr><tr><td class="docs"><p>Not only displays the lists, but also stores them away for reference, so user can do
 list 0
 to display all the tasks in list 0</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;list&quot;, :also [&quot;ls&quot; &quot;l&quot;], :cache-id :lists} display-lists
   &quot;Displays all the lists or all the tasks for the selected list&quot;
   ([state]
-     (if-let [lists (get-lists state)]
-       (-&gt;&gt; (utils/indexify (create-id-map lists))
-            (display-id-map &quot;Lists&quot;)
-            (cache-id-map :lists))))
+     (letfn [(not-hidden? [l]
+               (not (state/list-hidden? state (:id l))))]
+       (do-display-lists state &quot;Lists&quot; not-hidden?)))
   ([state i]
      (let [idx (utils/as-int i)]
        (if-let [cached-lists (state/cache-get :lists)]
          (if-let [the-list (cached-lists idx)]
            (if-let [tasks (xml/parse-task-series-response (api/rtm-tasks-getList state (:id the-list)))]
-             (-&gt;&gt; (utils/indexify (create-id-map tasks))
-                  (display-id-map (str &quot;List: &quot; (:name the-list)))
-                  (cache-id-map :tasks))))))))</pre></tr><tr><td class="docs"><p>Command for viewing a particular task</p>
+             (do
+               (state/cache-put :last-list-num idx)
+               (handle-get-list-response state tasks (:name the-list) (:id the-list)))))))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- display-last-list
+  [state]
+  (if-let [last-list-num (state/cache-get :last-list-num)]
+    (display-lists state last-list-num)))</pre></tr><tr><td class="docs"><p>Command for viewing a particular task</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;task&quot;, :also [&quot;t&quot;], :cache-id :tasks} view-task
   &quot;Displays the details of a particular task from the last displayed list.&quot;
   [state i]
@@ -2995,14 +3177,141 @@ to display all the tasks in list 0</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;nodebug&quot;} switch-debug-off!
   [state]
   (utils/switch-debug-on! false))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;rm&quot;, :also [&quot;delete&quot;]} delete-task
-  [state tasknum &amp; others]
+</td><td class="codes" /><pre class="brush: clojure">(defn- cache-if-undoable
+  &quot;Takes the raw xml response, and caches the details if it is undoable. The msg is what is displayed in the history.&quot;
+  [state msg xml-response]
+  (if-let [undoable (xml/parse-undoable xml-response (:timeline state))]
+    (state/store-undoable (assoc undoable :message msg)))
+  xml-response)</pre></tr><tr><td class="docs"><p>Helper function which abstracts out some common functionality when acting on a list
+of tasks (e.g. rm, mark as complete etc)</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- task-command
+  [f undo-msg state tasknum &amp; others]
+  (utils/debug (str &quot;task-command: tasknum=&quot; tasknum &quot;, others=&quot; others))
   (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
     (do
       (utils/debug (str &quot;task: &quot; task))
-      (utils/debug (api/rtm-tasks-delete state (:list-id task) (:task-series-id task) (:id task)))
+      (utils/debug (cache-if-undoable state (str undo-msg &quot; task \ (:name task) &quot;\)
+                                      (f state (:list-id task) (:task-series-id task) (:id task))))
       (if (seq others)
-        (recur state (first others) (rest others))))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
+        (recur f undo-msg state (first others) (rest others))
+        (display-last-list state)))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;rm&quot;, :also [&quot;delete&quot;]} delete-task
+  &quot;Delete one or more tasks (by index).&quot;
+  [state tasknum &amp; others]
+  (apply task-command api/rtm-tasks-delete &quot;Deleted&quot; state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;complete&quot;, :also [&quot;c&quot;]} complete-task
+  &quot;Mark one or more tasks as complete (by index).&quot;
+  [state tasknum &amp; others]
+  (apply task-command api/rtm-tasks-complete &quot;Completed&quot; state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;postpone&quot;, :also [&quot;pp&quot;]} postpone-task
+  &quot;Mark one or more tasks as postponed&quot;
+  [state tasknum &amp; others]
+  (apply task-command api/rtm-tasks-postpone &quot;Postponed&quot; state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;due&quot;} set-due-date
+  [state tasknum &amp; date]
+  (if (seq date)
+    (task-command (partial api/rtm-tasks-setDueDate (str/join &quot; &quot; date)) &quot;Changed due date on&quot; state tasknum)
+    (println &quot;You must provide a date.&quot;)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;tag&quot;} add-tags
+  [state tasknum &amp; tags]
+  (if (seq tags)
+    (task-command (partial api/rtm-tasks-addTags tags) &quot;Added tags to&quot; state tasknum)
+    (println &quot;You must specify tags.&quot;)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;rmtag&quot;} remove-tags
+  [state tasknum &amp; tags]
+  (if (seq tags)
+    (task-command (partial api/rtm-tasks-removeTags tags) &quot;Removed tags to&quot; state tasknum)
+    (println &quot;You must specify tags.&quot;)))</pre></tr><tr><td class="docs"><p>These are ripe for converting to macros</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- set-priority
+  [priority state tasknum &amp; others]
+  (apply task-command (partial api/rtm-tasks-setPriority priority) (str &quot;Set priority&quot; priority) state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;p0&quot;} set-priority-0
+  &quot;Sets the priority of a task to 0&quot;
+  [state tasknum &amp; others]
+  (apply set-priority &quot;0&quot; state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;p1&quot;} set-priority-1
+  &quot;Sets the priority of a task to 1&quot;
+  [state tasknum &amp; others]
+  (apply set-priority &quot;1&quot; state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;p2&quot;} set-priority-2
+  &quot;Sets the priority of a task to 2&quot;
+  [state tasknum &amp; others]
+  (apply set-priority &quot;2&quot; state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;p3&quot;} set-priority-3
+  &quot;Sets the priority of a task to 3&quot;
+  [state tasknum &amp; others]
+  (apply set-priority &quot;3&quot; state tasknum others))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;rename&quot;, :also [&quot;ren&quot;]} rename-task
+  &quot;Rename a task. rename [id] new-name&quot;
+  [state tasknum &amp; name]
+  (if name
+    (let [new-name (str/join &quot; &quot; name)]
+      (task-command (partial api/rtm-tasks-setName new-name)
+                    (str &quot;Renamed to \ new-name &quot;\) state tasknum))
+    (do
+      (println &quot;You must provide a name&quot;)
+      (display-last-list state))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;undo&quot;} undo
+  &quot;Displays undoable actions and allows to undo&quot;
+  ([state]
+     (-&gt;&gt; (utils/indexify (state/undoables))
+                  (display-id-map &quot;Undoable Tasks&quot; :message)
+                  (cache-id-map :undos)))
+  ([state idx]
+     (if-let [undo-map (state/cache-get :undos)]
+       (if-let [um (undo-map (utils/as-int idx))]
+         (if (api/rtm-transactions-undo state (:timeline um) (:transaction-id um))
+           (state/remove-undoable (utils/as-int idx)))
+         (println &quot;Error: Nothing found to undo&quot;)))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;newlist&quot;, :also [&quot;nl&quot;]} create-new-list
+  &quot;Creates a new list&quot;
+  [state &amp; name]
+  (api/rtm-lists-add state (str/join &quot; &quot; name)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- get-list
+  &quot;Gets the list from the cache&quot;
+  [id]
+  ((state/cache-get :lists) (utils/as-int id)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;move&quot;, :also [&quot;mv&quot;]} move-task
+  &quot;Move tasks by id to a list, which will be prompted for.&quot;
+  [state task-idx &amp; more]
+  (display-lists state)
+  (if-let [to-list (get-list (utils/prompt! &quot;Move task(s) to which list? &quot; (complement utils/as-int)))]
+    (loop [tasknum task-idx
+           others more]        
+      (if-let [task (:data ((state/cache-get :tasks) (utils/as-int tasknum)))]
+        (do          
+          (utils/debug (cache-if-undoable state (str &quot;Moved task \ (:name task) &quot;\&quot; to &quot; (:name to-list))
+                                          (api/rtm-tasks-moveTo state (:list-id task) (:id to-list) (:task-series-id task) (:id task))))
+          (if (seq others)
+            (recur (first others) (rest others))))))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- set-sort-order
+  [state list-num the-list &amp; keys]
+  (let [state (assoc-in state [:sort-order (:id the-list)] keys)]
+    (state/cache-put :state state)
+    (state/save-state! state)
+    (display-lists state list-num)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;sort&quot;, :also [&quot;s&quot;]} sort-list
+  &quot;sort [listnum] [d|p]&quot;
+  [state list-num &amp; keys]
+  (if-let [the-list (get-list list-num)]
+    (let [sort-keys (map keyword (filter #{&quot;due&quot; &quot;priority&quot; &quot;name&quot;} keys))]
+      (apply set-sort-order state list-num the-list sort-keys))))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn- do-hide-action
+  [state f listnum &amp; more-listnums]
+  (if-let [the-list (get-list listnum)]
+    (let [new-state (state/save-state! (state/cache-put :state (f state (:id the-list))))]
+      (if (seq more-listnums)
+        (recur new-state f (first more-listnums) (rest more-listnums))))))</pre></tr><tr><td class="docs"><p>I use this pattern in a few different places. Could abstract out?</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;hide&quot;, :also [&quot;hidden&quot;]} hide-list
+  &quot;Hides a list, by list number&quot;
+  ([state]
+     (letfn [(hidden? [l] (state/list-hidden? state (:id l)))]
+       (do-display-lists state &quot;Hidden Lists&quot; hidden?)))
+  ([state listnum &amp; more-listnums]
+     (apply do-hide-action state state/hide-list listnum more-listnums)))</pre></tr><tr><td class="docs">
+</td><td class="codes" /><pre class="brush: clojure">(defn ^{:cmd &quot;unhide&quot;} unhide-list
+  [state listnum &amp; more-listnums]
+  (apply do-hide-action state state/unhide-list listnum more-listnums))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#rtm-clj.core" name="rtm-clj.core"><h1 class="project-name">rtm-clj.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The entry point for the application. This contains the main entry for the
 command line application. The idea is that it displays a prompt, you enter
 a command, which is then executed. It's essentially a kind of REPL or shell.</p>
 </td><td class="codes" /><pre class="brush: clojure">(ns rtm-clj.core
@@ -3122,7 +3431,9 @@ with the rest of the args&quot;
     (if (arity-matches-args f (inc (count args)))
       (try
         (apply f state args)
-        (catch Exception e (println (str &quot;Exception: &quot; (.getMessage e)) )))
+        (catch Exception e
+          (println (str &quot;Exception: &quot; (.toString e)))
+          (.printStackTrace e)))
       (do
         (println (str cmd &quot;: wrong number of args&quot;))
         (help cmd)))
@@ -3139,7 +3450,7 @@ delegate to the call-cmd&quot;
   &quot;This is repl, if you like, for rtm. Read a command, evaluate it, print the result, loop&quot;
   [state]
   (call state (utils/prompt!))
-  (recur state))</pre></tr><tr><td class="docs"><p>Dynamically discover commands</p>
+  (recur (state/cache-get :state)))</pre></tr><tr><td class="docs"><p>Dynamically discover commands</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn- discover-commands
   ([]
      (discover-commands 'rtm-clj.command)
@@ -3155,8 +3466,10 @@ the Remember the Milk API. Once it is all set up, it just calls the cmd-loop.</p
 </td><td class="codes" /><pre class="brush: clojure">(defn -main [&amp; args]
   (discover-commands)
   (if-let [state (cmd/login (cmd/init-state))]
-    (cmd-loop (cmd/init-timeline state))
-    (do
-      (println &quot;Login failed&quot;)
-      (cmd/exit))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_rtm-clj.xml">rtm-clj.xml</li><li class="floating-toc-li" id="floating-toc_rtm-clj.api">rtm-clj.api</li><li class="floating-toc-li" id="floating-toc_rtm-clj.state">rtm-clj.state</li><li class="floating-toc-li" id="floating-toc_rtm-clj.utils">rtm-clj.utils</li><li class="floating-toc-li" id="floating-toc_rtm-clj.command">rtm-clj.command</li><li class="floating-toc-li" id="floating-toc_rtm-clj.core">rtm-clj.core</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+    (let [state-with-timeline (state/cache-put :state (cmd/init-timeline state))]
+      (cmd/display-lists state-with-timeline)
+      (cmd-loop state-with-timeline)
+      (do
+        (println &quot;Login failed&quot;)
+        (cmd/exit)))))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_rtm-clj.xml">rtm-clj.xml</li><li class="floating-toc-li" id="floating-toc_rtm-clj.api">rtm-clj.api</li><li class="floating-toc-li" id="floating-toc_rtm-clj.state">rtm-clj.state</li><li class="floating-toc-li" id="floating-toc_rtm-clj.utils">rtm-clj.utils</li><li class="floating-toc-li" id="floating-toc_rtm-clj.command">rtm-clj.command</li><li class="floating-toc-li" id="floating-toc_rtm-clj.core">rtm-clj.core</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>
