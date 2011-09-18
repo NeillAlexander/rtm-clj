@@ -1,10 +1,46 @@
 # rtm-clj
 
-This is a command line tool for interacting with Remember the Milk, implemented as a Clojure learning exercise.
+This is a command line tool for interacting with Remember the Milk, implemented as a Clojure learning exercise. At the time of writing it runs and provides a basic set of commands. It's possible to view all lists, add items, etc. 
+
+I did have plans to add more functionality but, actually, once I started to use it, I realized that I prefer using the Remember the Milk web interface, or the RTM app on my phone. At this point I'm not sure if I'll bother doing any more work on it.
+
+Here are the outstanding features I was originally planning on implementing:
+
+    1 - Maybe: Create a macro for commands?
+    2 - Tune the code as a learning exercise. There is lots of common code which could be made to macros?
+    3 - Numeric range selection when displaying a list
+    4 - Rtm numeric range selection for mv etc
+    5 - Provide a way to create aliases - useful for search
+    6 - Maybe: Up key to cycle through history?
+    7 - Fix bug - can't move task to smart list
+    8 - Allow wildcards for complete, rm, postpone etc. * for all. 1-4 for ranges etc
+    9 - Command to view all tags
+   10 - Provide way to uncomplete a completed task
+   11 - Provide way to list completed tasks
+   12 - Better handling of dates (work out timezone)
+   13 - Command to output items to a file
+   14 - Maybe: Change the prompt to display the context of the current list
+   15 - Change way due command works. Should be able to say "due time 1 2 3"
+   16 - Web front end for rtm
+   17 - Command to edit / add url for a task
+   18 - Write a high level set of tasks that help me do my weekly RTM process
+   19 - Command to open a url for a task
+   20 - Remove all println from the api part, to make it reusable
+   21 - Update the README
+   22 - Update the help
+   23 - Maybe: Split the command line engine into separate, re-usable project?
+   24 - Remove the dependency on monolithic contrib
+   25 - Write a blog entry once finished working on the app
+   26 - Delete a list
+   27 - Create an executable once happy with first version
+   28 - Convert to Clojure 1.3
+   29 - Command to do bulk copy of tasks e.g. travel checklist to list
+   30 - Make updates asynchronous - assume they will work and then if they don't report an error.
+
 
 ## Usage
 
-TODO
+lein uberjar && java -jar rtm-clj-0.1.0-SNAPSHOT-standalone.jar
 
 ## License
 
